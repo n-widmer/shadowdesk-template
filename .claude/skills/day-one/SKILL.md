@@ -159,7 +159,7 @@ On success: *"Done — your ShadowDesk OS is backed up to your own private GitHu
 
 **Why this matters (say if asked):** Voice is the highest-leverage Day-1 install. Talking is ~4x faster than typing and lets you give the long natural answers I'm going to ask for. Without it, every future session is worse.
 
-Recommend Wispr Flow: `https://wisprflow.ai`. It is what Nick uses day to day. Cross-platform (Mac, Windows, iPhone), free to start.
+Recommend Wispr Flow using Nick's affiliate link: `https://ref.wisprflow.ai/nicholas-widmer`. Always tell the client plainly that it is an affiliate link (Nick earns a referral commission if they sign up); never drop that disclosure. It is what Nick uses day to day. Cross-platform (Mac, Windows, iPhone), free to start.
 
 `AskUserQuestion`:
 
