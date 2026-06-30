@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": ["."]
+  },
+  "cleanupPeriodDays": 365,
+  "env": {
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "false",
+    "ENABLE_TOOL_SEARCH": "true",
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__perplexity__perplexity_reason|mcp__perplexity__perplexity_research",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/perplexity-guard.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

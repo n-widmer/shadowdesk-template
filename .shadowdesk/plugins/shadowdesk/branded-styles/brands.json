@@ -1,0 +1,15 @@
+[
+  {
+    "id": "shadowdesk",
+    "name": "ShadowDesk",
+    "font": "Poppins",
+    "fontLink": "Poppins:wght@400;600;700",
+    "bg": "#0f1b2d",
+    "text": "#e8eef5",
+    "accent": "#15a6df",
+    "logo": "avatar.png",
+    "initials": "SD",
+    "handle": "ShadowDesk OS",
+    "site": "shadowdesk.ai"
+  }
+]

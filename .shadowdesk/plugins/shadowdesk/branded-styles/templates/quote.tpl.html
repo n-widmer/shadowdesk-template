@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+{{FONT_LINK}}
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1350px; }
+  body {
+    background: {{BG}};
+    color: {{TEXT}};
+    font-family: {{FONT}}, 'Inter', sans-serif;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 96px 88px;
+  }
+  /* gradient accent bar, top edge */
+  body::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 12px;
+    background: linear-gradient(90deg, {{ACCENT}} 0%, #38cfc4 100%);
+  }
+  /* faint oversized accent glyph, bottom-right */
+  body::after {
+    content: "\201D";
+    position: absolute; right: 40px; bottom: -120px;
+    font-size: 520px; line-height: 1; font-weight: 700;
+    color: {{ACCENT}}; opacity: 0.06;
+  }
+  .brand { display: flex; align-items: center; gap: 22px; }
+  .brand img { height: 76px; width: 76px; }
+  .brand .mono {
+    height: 76px; width: 76px; border-radius: 18px;
+    background: {{ACCENT}}; color: #fff; font-weight: 700; font-size: 30px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand .name { font-weight: 700; font-size: 34px; letter-spacing: -0.5px; }
+  .quote {
+    position: relative; z-index: 1;
+    font-weight: 600; font-size: 66px; line-height: 1.24; letter-spacing: -1px;
+    max-width: 900px;
+  }
+  .quote .g { color: {{ACCENT}}; }
+  .foot {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 26px; font-weight: 400; color: {{TEXT}}; opacity: 0.62;
+  }
+  .foot .dot { width: 7px; height: 7px; border-radius: 50%; background: {{ACCENT}}; opacity: 0.9; }
+</style>
+</head>
+<body>
+  <div class="brand">{{LOGO_HTML}}<span class="name">{{NAME}}</span></div>
+  <div class="quote">{{QUOTE_HTML}}</div>
+  <div class="foot"><span>{{HANDLE}}</span><span class="dot"></span><span>{{SITE}}</span></div>
+</body>
+</html>

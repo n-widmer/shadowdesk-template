@@ -1,0 +1,14 @@
+{
+  "_status": "NOT_CONFIGURED",
+  "client": null,
+  "skills": {},
+  "patterns": {
+    "adopted": [],
+    "declined": [],
+    "lastSyncedVersion": null
+  },
+  "autoUpdate": {
+    "lastCheckedVersion": null,
+    "lastCheckedAt": null
+  }
+}

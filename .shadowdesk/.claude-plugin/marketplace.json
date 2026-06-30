@@ -1,0 +1,12 @@
+{
+  "name": "shadowdesk-starter",
+  "owner": { "name": "Nick Widmer", "email": "nick@shadowdesk.ai" },
+  "description": "ShadowDesk starter toolkit, bundled into your ShadowDesk OS. The full skill set, free. Get your personal key from Nick to switch on live updates.",
+  "plugins": [
+    {
+      "name": "shadowdesk",
+      "source": "./plugins/shadowdesk",
+      "description": "Nick Widmer's operating-system plugin: client skills, the /adapt and /update commands, and per-client wiring that survives updates."
+    }
+  ]
+}
