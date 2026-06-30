@@ -155,15 +155,15 @@ Re-run the step-3 checks after any repair. **Loop step 4 until `git ls-remote or
 
 On success: *"Done — your ShadowDesk OS is backed up to your own private GitHub, and I confirmed it's live, not just set up. Every time we wrap up I save and back it up automatically; you won't have to think about it."* Then proceed to Step 1.
 
-## Step 1 — Typeless voice tool (strong soft gate)
+## Step 1 — Wispr Flow voice tool (strong soft gate)
 
 **Why this matters (say if asked):** Voice is the highest-leverage Day-1 install. Talking is ~4x faster than typing and lets you give the long natural answers I'm going to ask for. Without it, every future session is worse.
 
-Recommend Typeless with affiliate link: `https://www.typeless.com/` — note the kickback transparently. Cross-platform (Mac, Windows, iPhone), 30-day free trial, no credit card to start.
+Recommend Wispr Flow: `https://wisprflow.ai`. It is what Nick uses day to day. Cross-platform (Mac, Windows, iPhone), free to start.
 
 `AskUserQuestion`:
 
-1. **"Got it — Typeless is working" (Recommended)** — accept, proceed to Step 2.
+1. **"Got it — Wispr Flow is working" (Recommended)** — accept, proceed to Step 2.
 2. **"I already use a different voice tool"** — accept, proceed.
 3. **"I'm stuck"** — patient walkthrough, one step at a time.
 4. **"I'll skip this for now"** — skip path below.
@@ -171,7 +171,7 @@ Recommend Typeless with affiliate link: `https://www.typeless.com/` — note the
 **Skip path** (only if the user picks option 4):
 
 1. Plain-English cost warning: *"Quick heads-up — you'll get a worse experience here without it. Talking is 4x faster and lets you give me the long answers I'm going to ask for. I highly recommend doing this now. But if you want to defer — totally fine, I'll remind you next session."*
-2. `AskUserQuestion` ONE more time: **"Try Typeless now"** / **"No, defer it (Recommended if you really want to skip)"**.
+2. `AskUserQuestion` ONE more time: **"Try Wispr Flow now"** / **"No, defer it (Recommended if you really want to skip)"**.
 3. If they still defer: write `shadowdesk/onboarding/voice-unconfigured.md` containing a single line: *"Voice tool skipped during /day-one on YYYY-MM-DD. /begin-session should re-prompt."* (Substitute today's date.) Proceed to Step 2.
 
 No hard gate. A client who hits an install wall and is told "we can't proceed" closes the window. The re-prompt mechanism catches the lost conversion next session.
