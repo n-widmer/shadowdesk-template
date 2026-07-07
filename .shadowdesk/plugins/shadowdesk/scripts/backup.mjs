@@ -35,10 +35,10 @@ function run() {
   const root = (git(["rev-parse", "--show-toplevel"], cwd).out || "").trim();
   if (!root) return; // not a git repo -> no-op
 
-  const isShadowDesk OS = ["CLAUDE.md", "SKILLS.md", "CONNECTIONS.md"].every((f) =>
+  const isShadowDeskOS = ["CLAUDE.md", "SKILLS.md", "CONNECTIONS.md"].every((f) =>
     existsSync(join(root, f))
   );
-  if (!isShadowDesk OS) return; // not a managed brain -> no-op
+  if (!isShadowDeskOS) return; // not a managed brain -> no-op
   if (existsSync(join(root, ".no-autobackup"))) return; // explicit kill switch (e.g. HIPAA client)
 
   const remote = (git(["remote", "get-url", "origin"], root).out || "").trim();
