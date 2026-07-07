@@ -1,6 +1,6 @@
 ---
 name: day-one
-description: First-touch on-ramp inside this ShadowDesk OS. Three steps — voice tool, harness settings (bypass mode + model picker), and a fast website + LinkedIn scrape — followed by a synthesized identity paragraph and a soft-ask handoff to /skill-builder. Use when the user pastes the kickoff bundle from shadowdesk.ai/levelup, says "set me up", "first time", "I just opened this", "walk me through Day One", or when you spot the SHADOWDESK_BUNDLE marker in their first message. One-shot per client.
+description: First-touch on-ramp inside this ShadowDesk OS. Three steps — voice tool, harness settings (bypass mode + model picker), and a fast website scrape plus a LinkedIn paste — followed by a synthesized identity paragraph and a soft-ask handoff to /skill-builder. Use when the user pastes the kickoff bundle from shadowdesk.ai/levelup, says "set me up", "first time", "I just opened this", "walk me through Day One", or when you spot the SHADOWDESK_BUNDLE marker in their first message. One-shot per client.
 ---
 
 # /day-one
@@ -70,24 +70,19 @@ claude plugin install document-skills@anthropic-agent-skills
 
 They also load on the next reopen, alongside the toolkit above.
 
-## Capture the Apify token from the paste-bundle
+## The paste-bundle
 
-The user's first message should contain a bundle pasted from `shadowdesk.ai/levelup`:
+The user's first message may contain a kickoff line pasted from `shadowdesk.ai/levelup`:
 
 ```
 Read .claude/skills/day-one/SKILL.md and follow it to walk me through Day One.
-<!-- SHADOWDESK_BUNDLE v1
-APIFY_TOKEN=apify_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
--->
 ```
 
-Parse the `APIFY_TOKEN=` line from inside the `SHADOWDESK_BUNDLE v1` HTML-comment block. Hold the value in working memory for this session only. Do **not** `setx` it, do **not** write it to `.env`, do **not** commit it. The token vanishes when this session ends — that's intentional.
-
-**If the bundle is missing the token line** (the user pasted the kickoff prompt by hand, or only pasted the prompt): *"Looks like the LinkedIn-scrape token didn't come through. Quick fix — go to shadowdesk.ai/levelup, enter the passcode, and paste me the whole bundle this time."* Wait for the re-paste. Don't try to teach what the token is — that's exactly the surface I'm hiding.
+If you see it, just start Day One. There is nothing to parse or capture: onboarding needs no API key, not the client's and not Nick's. (An older bundle may still carry a `SHADOWDESK_BUNDLE` / `APIFY_TOKEN` marker. Ignore it, it is not used.)
 
 ## Greeting
 
-After the silent OS detect, the silent toolkit check, and the bundle parse, open with this — ShadowDesk OS-branded, one thought per line, no progress bars:
+After the silent OS detect and the silent toolkit check, open with this (ShadowDesk OS-branded, one thought per line, no progress bars):
 
 > Hey. Welcome to your ShadowDesk OS.
 >
@@ -244,20 +239,15 @@ Wait for any kind of confirm ("done" / "picked it" / "ok"). Don't gate too hard 
    ---
    ```
 
-### LinkedIn scrape (Apify, token from bundle)
+### LinkedIn (paste, no API)
 
-1. **Validate URL.** If it doesn't match `linkedin.com/in/<username>`, ask once: *"That doesn't look like a profile URL — got a `linkedin.com/in/...` link handy?"*
-2. **If still wrong, OR the client says they don't have LinkedIn:** skip the Apify call. Note in identity synthesis below that only the website was captured. Do **not** block Day 1 over a missing LinkedIn.
-3. **Apify call** (token from § Capture the Apify token, inline in curl — never via env var):
+LinkedIn blocks automated reads, so we don't scrape it, and onboarding uses no scraping key. Ask the client to paste it. Plain and quick:
 
-   ```bash
-   curl -sS -X POST "https://api.apify.com/v2/acts/harvestapi~linkedin-profile-scraper/run-sync-get-dataset-items?token=<TOKEN_FROM_BUNDLE>" \
-     -H "Content-Type: application/json" \
-     -d '{"queries":["<LINKEDIN_URL>"]}'
-   ```
+> Last thing for your profile: open your LinkedIn, copy your headline and your About section, and paste them here. Prefer to skip it? Just say so and we keep moving.
 
-4. **Parse** the returned JSON array of profile objects. Pull `headline`, `about` / `summary`, `experience`, `education`, `skills`, `location`.
-5. **Output:** `onboarding/profile-from-linkedin.md` — parsed JSON rendered as markdown.
+1. If they paste text, use it directly. If they paste a profile URL, try `WebFetch` on it once; LinkedIn usually blocks that, so if it comes back empty just ask for the headline + About text instead. Never block Day 1 over LinkedIn.
+2. **If the client has no LinkedIn or wants to skip:** note in the identity synthesis below that only the website was captured, and move on.
+3. **Output:** `onboarding/profile-from-linkedin.md`, holding whatever they gave you rendered as clean markdown (headline, about, any roles they mention).
 
 ### Neither link works
 
@@ -328,7 +318,7 @@ First, one short line introducing the toolkit, in plain words:
 
 > One more thing: your full ShadowDesk toolkit is already installed. Type `/shadowdesk:` any time to see every command, and `/shadowdesk:adapt <skill>` wires one up to your own tools.
 
-A few skills (debrief, end-session, networking) tune themselves from a plain settings file at [`references/shadowdesk-config.md`](../../../references/shadowdesk-config.md). It ships pre-filled with safe defaults, so everything works today; open it and fill in your own tools (your CRM, your city, your calendar) whenever you're ready. Don't walk the client through it now (it's a "later, on your own time" thing), just let them know it's there.
+A couple of skills (like end-session) tune themselves from a plain settings file at [`references/shadowdesk-config.md`](../../../references/shadowdesk-config.md). It ships pre-filled with safe defaults, so everything works today; open it and fill in your own tools (your CRM, your city, your calendar) whenever you're ready. Don't walk the client through it now (it's a "later, on your own time" thing), just let them know it's there.
 
 Then `AskUserQuestion`:
 
@@ -379,7 +369,7 @@ You (Nick at first, possibly future facilitators) are on Zoom or in-person, scre
 
 - **30-minute soft cap.** If /day-one runs past 30 min, you've gone too deep — the temptation is to start interviewing, don't. Identity-paragraph depth is /skill-builder's job (when building voice-aware skills), or /capture-voice's job later. Glance, don't dig.
 - **Voice tool is the highest-leverage install.** If the client wants to skip, push back gently ONCE then let them skip — the re-prompt mechanism catches it next session.
-- **Apify token comes from /levelup paste.** If the bundle is missing, send them back to /levelup. Don't try to teach them what a token is.
+- **No API key in onboarding.** Day One needs no scraping token. LinkedIn is a paste, the website scrape uses the client's own Firecrawl key (or the WebFetch fallback). If an old /levelup bundle still carries an `APIFY_TOKEN` marker, ignore it.
 - **Identity paragraph is locked-in context for every future session.** If the bullet reflect or paragraph looks subtly wrong, push for the correction NOW — fixing it later costs more.
 
 ### Guided-vs-autonomous flag
