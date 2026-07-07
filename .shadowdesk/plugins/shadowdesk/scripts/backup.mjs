@@ -11,7 +11,7 @@
 // session or lose work. Runs identically on Windows/Mac (Node, no shell builtins).
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 
 const MODE = process.argv[2] || "";
@@ -20,12 +20,14 @@ const EVT = FINAL ? "SessionEnd" : MODE === "sync" ? "SessionStart" : "Stop";
 const COOLDOWN_MS = 3 * 60 * 1000; // debounce the per-turn Stop save to once / 3 min
 const DRIVE_WARN_MS = 20 * 60 * 60 * 1000; // warn about a cloud-drive brain at most once / 20h
 const GIT_TIMEOUT = 20000;
+const MSGS = []; // buffered user messages, flushed as one JSON at the end (declared here so run() can use emit())
 
 try {
   run();
 } catch {
   /* never block */
 }
+try { flush(); } catch {}
 process.exit(0);
 
 function run() {
@@ -54,19 +56,37 @@ function run() {
 }
 
 function doSync(root) {
+  surfacePendingWarn(root); // deliver any save-mode warning left by a prior Stop/SessionEnd
+
   git(["fetch", "--quiet"], root);
   const behind = behindCount(root);
-  if (behind <= 0) return; // already current -> silent
+  if (behind <= 0) return; // already current -> silent (a pending warning, if any, still flushes)
 
   const dirty = porcelain(root).length > 0;
-  if (dirty) git(["stash", "push", "-u", "-m", "ki-autosync"], root);
+  const stashed = dirty && git(["stash", "push", "-u", "-m", "ki-autosync"], root).ok;
   const pull = git(["pull", "--rebase", "--quiet"], root);
-  if (dirty) git(["stash", "pop"], root);
 
-  if (pull.ok) {
-    emit(`You're current — pulled ${behind} update${behind === 1 ? "" : "s"} from your team.`);
+  if (!pull.ok) {
+    // A conflict leaves a rebase in progress with markers in the files. Abort it so the repo
+    // rolls back cleanly instead of wedging, then restore the user's stashed edits.
+    git(["rebase", "--abort"], root); // harmless no-op if no rebase is in progress
+    if (stashed) git(["stash", "pop"], root);
+    emit("A teammate pushed changes that overlap yours, so I held the merge to keep everything safe. Nothing is lost, I'll sort it out with you next time.");
+    return;
   }
-  // if pull failed, stay quiet here; the next save / end-session handles a real conflict
+
+  if (stashed) {
+    const pop = git(["stash", "pop"], root);
+    if (!pop.ok) {
+      // Pop conflicts with the just-pulled changes: git keeps the stash. Reset to the clean
+      // pulled state so no conflict markers are left in the files; the edits stay in the stash.
+      git(["reset", "--hard", "HEAD"], root);
+      emit("Pulled your team's latest. Some of it overlapped unsaved edits, so I tucked those safely aside. Ask me to bring them back and I'll merge them with you.");
+      return;
+    }
+  }
+
+  emit(`You're current. Pulled ${behind} update${behind === 1 ? "" : "s"} from your team.`);
 }
 
 function doSave(root) {
@@ -91,9 +111,8 @@ function doSave(root) {
       const conflict = /conflict|could not apply|patch failed/i.test(reb.err + reb.out);
       git(["rebase", "--abort"], root); // harmless no-op if no rebase is in progress
       if (conflict) {
-        emit(
-          "Your work is saved on this laptop. You and a teammate changed the same spot, so I'll sort the merge with you next time — nothing is lost."
-        );
+        const m = "Your work is saved on this laptop. You and a teammate changed the same spot, so I'll sort the merge with you next time. Nothing is lost.";
+        emit(m); persistWarn(root, m);
         return; // never force, never lose
       }
       // not a conflict (likely network): fall through, let the push attempt report it
@@ -101,7 +120,12 @@ function doSave(root) {
   }
 
   const push = pushNow(root);
-  if (!push.ok) emit(pushFailMsg(push.err));
+  if (!push.ok) {
+    const m = pushFailMsg(push.err);
+    emit(m); persistWarn(root, m); // Stop/SessionEnd can't surface it, so persist for next SessionStart
+  } else {
+    clearWarn(root); // backup is healthy again; drop any stale warning
+  }
 }
 
 // ---- git plumbing -------------------------------------------------------
@@ -146,7 +170,7 @@ function pushNow(root) {
 function pushFailMsg(err = "") {
   const e = err.toLowerCase();
   if (e.includes("authentication") || e.includes("could not read username") || e.includes("permission denied"))
-    return "Your work is saved on this laptop, but the cloud sign-in looks expired. Reconnect GitHub when you can — nothing is lost.";
+    return "Your work is saved on this laptop, but the cloud sign-in looks expired. Reconnect GitHub when you can. Nothing is lost.";
   if (e.includes("could not resolve") || e.includes("unable to access") || e.includes("timed out") || e.includes("network"))
     return "Your work is saved on this laptop. The internet looks flaky, so the cloud copy will catch up later.";
   return "Your work is saved on this laptop; the cloud backup didn't finish this time and will retry next.";
@@ -213,10 +237,33 @@ function nowStamp() {
   return `${p(d.getMonth() + 1)}/${p(d.getDate())}/${String(d.getFullYear()).slice(2)} - ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-function emit(msg) {
+// Messages are buffered (MSGS, declared up top) and flushed as ONE JSON (two stdout writes would not parse).
+function emit(msg) { MSGS.push(msg); }
+
+function flush() {
+  if (!MSGS.length) return;
+  const msg = MSGS.map((m) => "Backup: " + m).join("\n\n");
+  // additionalContext reaches the model on SessionStart (where sync + any persisted save
+  // warnings are surfaced). Stop also supports a top-level systemMessage, so a same-session
+  // Stop warning is visible immediately; SessionEnd has no model turn, which is why save
+  // warnings are ALSO persisted to a flag file and re-surfaced on the next SessionStart.
+  const out = { hookSpecificOutput: { hookEventName: EVT, additionalContext: msg } };
+  if (EVT === "Stop") out.systemMessage = msg;
+  try { process.stdout.write(JSON.stringify(out)); } catch {}
+}
+
+// Save-mode warnings fire on Stop/SessionEnd, where additionalContext is never delivered.
+// Persist them so the next SessionStart (doSync) can surface them via a channel that works.
+function warnPath(root) { return join(root, ".git", ".ki-backup-warning"); }
+function persistWarn(root, msg) { try { writeFileSync(warnPath(root), msg); } catch {} }
+function surfacePendingWarn(root) {
+  const p = warnPath(root);
   try {
-    process.stdout.write(
-      JSON.stringify({ hookSpecificOutput: { hookEventName: EVT, additionalContext: "Backup: " + msg } })
-    );
+    if (existsSync(p)) {
+      const m = readFileSync(p, "utf8");
+      if (m) emit(m);
+      try { unlinkSync(p); } catch {}
+    }
   } catch {}
 }
+function clearWarn(root) { try { if (existsSync(warnPath(root))) unlinkSync(warnPath(root)); } catch {} }

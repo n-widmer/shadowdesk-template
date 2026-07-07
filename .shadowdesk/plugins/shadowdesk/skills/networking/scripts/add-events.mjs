@@ -5,8 +5,9 @@
 // status:tentative + colorId:3 (purple) via the gws CLI. Also dedupes within the
 // batch so one run never double-adds the same event.
 //
-// Windows note: gws is a .cmd shim, so we MUST use shell:true + manual cmd.exe-safe
-// quoting (inner " doubled to ""). See your calendar API reference.
+// Cross-platform note: gws is a .cmd shim on Windows (needs shell:true + cmd.exe-safe
+// quoting), but a plain binary on Mac/Linux (call it directly with an argv array, no
+// quoting). gws() branches on process.platform, mirroring playwatch/scripts/watch.mjs.
 //
 // Per-user settings are read at runtime, NOT hardcoded:
 //   - selfEmail      : --self-email <addr>, or env NET_SELF_EMAIL. The user passes their
@@ -14,8 +15,10 @@
 //                      selfEmail key) when running the skill. If empty, the user is simply
 //                      not added as a guest (no RSVP prompt) and the event still lands as
 //                      a tentative hold.
-//   - calendar command : env NET_CAL_CMD (default 'gws.cmd'), so the inserter can point
+//   - calendar command : env NET_CAL_CMD (default 'gws'), so the inserter can point
 //                      at a different calendar CLI without editing this file.
+//   - hold color     : --color <id> or env NET_CAL_COLOR (the SKILL passes calendarColor
+//                      from config); defaults to '3' (purple).
 //
 // Usage:
 //   node scripts/add-events.mjs [candidatesPath] [--dry-run] [--window-days N] [--self-email <addr>]
@@ -47,11 +50,13 @@ const argv = process.argv.slice(2);
 const dryRun = argv.includes('--dry-run');
 let windowDays = 65;
 let selfEmailArg = '';
+let colorArg = '';
 const positionals = [];
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--window-days') { windowDays = parseInt(argv[++i], 10) || 65; continue; }
   if (a === '--self-email') { selfEmailArg = argv[++i] || ''; continue; }
+  if (a === '--color') { colorArg = argv[++i] || ''; continue; }
   if (a.startsWith('--')) continue;
   positionals.push(a);
 }
@@ -63,18 +68,36 @@ const candidatesPath = positionals[0] || path.join(SKILL_DIR, 'state', 'candidat
 // config); if empty, no guest is added and the hold still lands.
 const SELF_EMAIL = selfEmailArg || process.env.NET_SELF_EMAIL || '';
 
-// The calendar CLI is overridable via NET_CAL_CMD (defaults to the gws.cmd shim).
-const CAL_CMD = process.env.NET_CAL_CMD || 'gws.cmd';
+// The calendar CLI is overridable via NET_CAL_CMD. Default 'gws' on every platform:
+// the binary is 'gws' on Mac/Linux, and on Windows the shell resolves the 'gws.cmd'
+// shim. Mirrors playwatch/scripts/watch.mjs.
+const CAL_CMD = process.env.NET_CAL_CMD || 'gws';
+const IS_WIN = process.platform === 'win32';
+
+// Hold color: --color <id> or NET_CAL_COLOR (the SKILL passes calendarColor from config).
+// Defaults to '3' (purple) to preserve prior behavior when unset.
+const CAL_COLOR = colorArg || process.env.NET_CAL_COLOR || '3';
 
 // ---- gws helpers ----
-const q = (s) => `"${String(s).replace(/"/g, '""')}"`; // cmd.exe-safe quote
+const q = (s) => `"${String(s).replace(/"/g, '""')}"`; // cmd.exe-safe quote (win32 only)
 
 function gws(args) {
-  const r = spawnSync(`${CAL_CMD} ${args.join(' ')}`, [], {
-    encoding: 'utf8', shell: true, maxBuffer: 96 * 1024 * 1024,
-  });
+  // Windows: gws is a .cmd shim, so shell:true + manual cmd.exe quoting of every arg.
+  // Mac/Linux: call the binary directly with a real argv array and NO quoting (POSIX
+  // /bin/sh would collapse the doubled "" and corrupt the JSON args). Same split watch.mjs uses.
+  const r = IS_WIN
+    ? spawnSync(`${CAL_CMD} ${args.map(q).join(' ')}`, [], { encoding: 'utf8', shell: true, maxBuffer: 96 * 1024 * 1024 })
+    : spawnSync(CAL_CMD, args, { encoding: 'utf8', shell: false, maxBuffer: 96 * 1024 * 1024 });
   if (r.status !== 0) return { ok: false, stdout: r.stdout || '', stderr: r.stderr || '', error: r.error };
   return { ok: true, stdout: r.stdout || '' };
+}
+
+// gws prepends a non-JSON line (e.g. "Using keyring backend: keyring") before its JSON.
+// Strip anything before the first { or [ (mirrors watch.mjs safeJsonParse).
+function safeJsonParse(s) {
+  const str = String(s || '');
+  const i = str.search(/[{[]/);
+  return JSON.parse(i >= 0 ? str.slice(i) : str);
 }
 
 // strip characters that break cmd.exe JSON quoting or violate the no-em-dash rule
@@ -138,10 +161,10 @@ function loadExisting() {
     orderBy: 'startTime',
     maxResults: 2500,
   });
-  const r = gws(['calendar', 'events', 'list', '--params', q(params), '--format', 'json']);
+  const r = gws(['calendar', 'events', 'list', '--params', params, '--format', 'json']);
   if (!r.ok) { console.error('ERROR listing calendar:', r.stderr || r.error); process.exit(2); }
   let data;
-  try { data = JSON.parse(r.stdout); } catch { console.error('ERROR: could not parse gws list output'); process.exit(2); }
+  try { data = safeJsonParse(r.stdout); } catch { console.error('ERROR: could not parse gws list output'); process.exit(2); }
   const items = data.items || data.events || [];
   return items.map((e) => ({ summary: e.summary || '', start: toDate(e.start) }));
 }
@@ -155,13 +178,13 @@ function insertEvent(ev) {
     start: ev.start,
     end: ev.end,
     status: 'tentative',
-    colorId: '3',
+    colorId: CAL_COLOR,
     // self-as-guest -> the Yes/No/Maybe RSVP prompt shows on the calendar (only if we have an email)
     ...(SELF_EMAIL ? { attendees: [{ email: SELF_EMAIL, responseStatus: 'needsAction' }] } : {}),
   };
   // sendUpdates:none so adding the user as a guest never emails anyone
   const params = JSON.stringify({ calendarId: 'primary', sendUpdates: 'none' });
-  return gws(['calendar', 'events', 'insert', '--params', q(params), '--json', q(JSON.stringify(body)), '--format', 'json']);
+  return gws(['calendar', 'events', 'insert', '--params', params, '--json', JSON.stringify(body), '--format', 'json']);
 }
 
 // ---- main ----

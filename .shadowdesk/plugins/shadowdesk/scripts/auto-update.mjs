@@ -27,12 +27,25 @@ const semverGt = (a, b) => {
 
 const readVersion = (p) => { try { return JSON.parse(readFileSync(p, "utf8")).version || null; } catch { return null; } };
 
+// Resolve the marketplace this plugin is actually installed from. It is registered as
+// "shadowdesk@<marketplace>" (shadowdesk-starter for the free bundle, shadowdesk for the
+// keyed channel). Refreshing the WRONG name throws, so read the real one instead of
+// hardcoding it.
+function resolveMarketplaceName() {
+  try {
+    const ip = JSON.parse(readFileSync(join(homedir(), ".claude", "plugins", "installed_plugins.json"), "utf8"));
+    const key = Object.keys(ip).find((k) => k.startsWith("shadowdesk@"));
+    if (key) return key.slice("shadowdesk@".length);
+  } catch {}
+  return null;
+}
+
 // Find the latest available plugin version from the refreshed marketplace cache (best-effort).
-function latestFromCatalog() {
+function latestFromCatalog(marketplace) {
   const base = join(homedir(), ".claude", "plugins", "marketplaces");
-  const candidates = [
-    join(base, "shadowdesk", "plugins", "shadowdesk", ".claude-plugin", "plugin.json"),
-  ];
+  const candidates = [];
+  if (marketplace) candidates.push(join(base, marketplace, "plugins", "shadowdesk", ".claude-plugin", "plugin.json"));
+  candidates.push(join(base, "shadowdesk", "plugins", "shadowdesk", ".claude-plugin", "plugin.json"));
   for (const c of candidates) { const v = readVersion(c); if (v) return v; }
   // fallback: shallow-scan marketplace dirs for any shadowdesk plugin manifest
   try {
@@ -66,18 +79,23 @@ try {
   const TWENTY_H = 20 * 60 * 60 * 1000;
   if (now - last < TWENTY_H) process.exit(0);
 
-  // gate: only keyed clients can pull from the marketplace. A free-starter / offline client
-  // makes the catalog refresh throw; we swallow it and fall back to the pattern nudge.
+  // Refresh the catalog for whatever marketplace this client is actually on (keyed
+  // 'shadowdesk' or free 'shadowdesk-starter'). If the name can't be resolved, or a
+  // directory/offline source has nothing new to pull, the refresh throws or is skipped;
+  // we swallow it and fall back to the pattern nudge.
   let installed = readVersion(join(root, ".claude-plugin", "plugin.json"));
+  const marketplace = resolveMarketplaceName();
   let catalogRefreshed = false;
-  try {
-    execSync('claude plugin marketplace update shadowdesk', { timeout: 30000, stdio: "ignore" });
-    catalogRefreshed = true;
-  } catch {}
+  if (marketplace) {
+    try {
+      execSync(`claude plugin marketplace update ${marketplace}`, { timeout: 30000, stdio: "ignore" });
+      catalogRefreshed = true;
+    } catch {}
+  }
 
   let msg = null;
   if (catalogRefreshed) {
-    const latest = latestFromCatalog();
+    const latest = latestFromCatalog(marketplace);
     if (latest && installed && semverGt(latest, installed)) {
       msg = `ShadowDesk plugin: Nick shipped an update (v${latest}, you're on v${installed}). Want me to pull it in? Say yes and I'll run /shadowdesk:update, which applies it and offers any new skills/patterns one at a time. Nothing changes without your ok, and your saved settings are never touched.`;
     }
