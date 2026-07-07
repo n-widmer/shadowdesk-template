@@ -110,7 +110,9 @@ function isFullDocument(html) {
 }
 
 function wrapInFrame(content) {
-  return frameTemplate.replace('<!-- CONTENT -->', content);
+  // Function replacer so $-sequences ($&, $$, $`, $') in mockup content are inserted
+  // literally, not interpreted as String.replace replacement patterns.
+  return frameTemplate.replace('<!-- CONTENT -->', () => content);
 }
 
 function getNewestScreen() {
@@ -308,7 +310,13 @@ function startServer() {
     );
     watcher.close();
     clearInterval(lifecycleCheck);
+    // Destroy open (WebSocket) connections so server.close() can actually complete;
+    // a live browser tab otherwise keeps the process alive forever.
+    try { for (const socket of clients) socket.destroy(); } catch {}
+    if (typeof server.closeAllConnections === 'function') { try { server.closeAllConnections(); } catch {} }
     server.close(() => process.exit(0));
+    // Hard fallback: guarantee exit even if close hangs.
+    setTimeout(() => process.exit(0), 1000).unref();
   }
 
   function ownerAlive() {
@@ -336,10 +344,23 @@ function startServer() {
     }
   }
 
+  let listenAttempts = 0;
+  server.on('error', (err) => {
+    // Random-port collision (EADDRINUSE): retry a fresh port instead of dying uncaught.
+    if (err.code === 'EADDRINUSE' && listenAttempts < 10) {
+      listenAttempts++;
+      setTimeout(() => server.listen(49152 + Math.floor(Math.random() * 16382), HOST), 50);
+    } else {
+      console.log(JSON.stringify({ type: 'server-error', error: err.message }));
+      process.exit(1);
+    }
+  });
+
   server.listen(PORT, HOST, () => {
+    const actualPort = server.address().port; // may differ from PORT after an EADDRINUSE retry
     const info = JSON.stringify({
-      type: 'server-started', port: Number(PORT), host: HOST,
-      url_host: URL_HOST, url: 'http://' + URL_HOST + ':' + PORT,
+      type: 'server-started', port: actualPort, host: HOST,
+      url_host: URL_HOST, url: 'http://' + URL_HOST + ':' + actualPort,
       screen_dir: CONTENT_DIR, state_dir: STATE_DIR
     });
     console.log(info);
