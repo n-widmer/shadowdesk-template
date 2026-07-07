@@ -30,6 +30,13 @@ Say it plainly, no jargon: *"One quick setup thing before we start. Your compute
 
 The plain-English "what even is Git Bash" explainer for the user lives in [`/references/whats-getting-installed.md`](../../../references/whats-getting-installed.md) — read it to them if they ask why any of this matters.
 
+### Confirm Node is installed (silent, right after the shell detect)
+
+Still before saying anything, run `node --version` in Bash:
+
+- **You get a version (e.g. `v20.x`)** → good, proceed silently.
+- **It errors or says "command not found"** → Node isn't installed. A few skills and the update channel run on it, so fix it now in plain language: *"One small engine your ShadowDesk OS runs on isn't installed yet. Let me point you at the 30-second install."* Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it. Windows (Git Bash): `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Then close and reopen VS Code, re-run `node --version`, and confirm a version before continuing.
+
 ## Silent toolkit install (right after the OS detect)
 
 The full ShadowDesk toolkit ships INSIDE this clone (the bundled `.shadowdesk` folder). No key is needed to use it — the key only turns on live updates later. Your job here is to make sure it's switched on. Still before saying anything, run `claude plugin list` in Bash:
@@ -47,6 +54,8 @@ The full ShadowDesk toolkit ships INSIDE this clone (the bundled `.shadowdesk` f
   > Switching your toolkit on. One quick thing makes it stick: close VS Code all the way and open it again, then we'll keep going.
 
   After they reopen, re-run `claude plugin list` and confirm `shadowdesk` shows before moving on. The typeable `/shadowdesk:` commands appear after that reopen.
+
+  **If `shadowdesk` still isn't listed after they reopen:** they probably did *Reload Window* or only closed the tab, which isn't a full restart. Say: *"Let's do a full restart. Quit VS Code completely (Mac: Cmd+Q; Windows: close every VS Code window), wait a second, then open the shadowdesk folder again. We'll pick up right here, nothing's lost."* Then re-run `claude plugin list` and confirm before moving on.
 
   **If the bundle folder isn't there** (rare — an old clone): fall back to *"Part of your toolkit didn't come through. Re-clone from shadowdesk.ai/levelup, or text Nick."* Don't continue until `claude plugin list` shows `shadowdesk`.
 
@@ -172,7 +181,7 @@ Recommend Wispr Flow using Nick's affiliate link: `https://ref.wisprflow.ai/nich
 
 1. Plain-English cost warning: *"Quick heads-up — you'll get a worse experience here without it. Talking is 4x faster and lets you give me the long answers I'm going to ask for. I highly recommend doing this now. But if you want to defer — totally fine, I'll remind you next session."*
 2. `AskUserQuestion` ONE more time: **"Try Wispr Flow now"** / **"No, defer it (Recommended if you really want to skip)"**.
-3. If they still defer: write `shadowdesk/onboarding/voice-unconfigured.md` containing a single line: *"Voice tool skipped during /day-one on YYYY-MM-DD. /begin-session should re-prompt."* (Substitute today's date.) Proceed to Step 2.
+3. If they still defer: write `onboarding/voice-unconfigured.md` containing a single line: *"Voice tool skipped during /day-one on YYYY-MM-DD. /begin-session should re-prompt."* (Substitute today's date.) Proceed to Step 2.
 
 No hard gate. A client who hits an install wall and is told "we can't proceed" closes the window. The re-prompt mechanism catches the lost conversion next session.
 
@@ -225,7 +234,7 @@ Wait for any kind of confirm ("done" / "picked it" / "ok"). Don't gate too hard 
 1. **Primary:** Firecrawl `/scrape` via the `mcp__firecrawl__firecrawl_scrape` MCP tool. Uses `FIRECRAWL_AIOS_API_KEY` (already captured at user scope).
 2. **Fallback (silent):** if Firecrawl returns empty content, an HTTP error, or the env var is missing, use `WebFetch`. Same extraction targets, narrower data quality. Don't tell the user the fallback fired — silent.
 3. **Extraction targets:** title, description, main copy, services, target audience, voice notes, any visible brand colors.
-4. **Output:** `shadowdesk/onboarding/profile-from-website.md`. Frontmatter-tag which path was used:
+4. **Output:** `onboarding/profile-from-website.md`. Frontmatter-tag which path was used:
 
    ```yaml
    ---
@@ -248,7 +257,7 @@ Wait for any kind of confirm ("done" / "picked it" / "ok"). Don't gate too hard 
    ```
 
 4. **Parse** the returned JSON array of profile objects. Pull `headline`, `about` / `summary`, `experience`, `education`, `skills`, `location`.
-5. **Output:** `shadowdesk/onboarding/profile-from-linkedin.md` — parsed JSON rendered as markdown.
+5. **Output:** `onboarding/profile-from-linkedin.md` — parsed JSON rendered as markdown.
 
 ### Neither link works
 
@@ -256,9 +265,9 @@ If the client has no website AND no LinkedIn:
 
 > No problem — we'll get it straight from you. Tell me in your own words: what do you do, who do you serve, and how long have you been doing it?
 
-Capture the answer. Write it to `shadowdesk/onboarding/profile-from-client-statement.md`. Proceed to identity synthesis with that as the only source.
+Capture the answer. Write it to `onboarding/profile-from-client-statement.md`. Proceed to identity synthesis with that as the only source.
 
-## Identity paragraph synthesis (fills shadowdesk/CLAUDE.md § 1)
+## Identity paragraph synthesis (fills CLAUDE.md § 1)
 
 Four-step flow.
 
@@ -294,7 +303,7 @@ Capture the answer. This is the most common scrape miss in 30 seconds.
 
 Write a single paragraph (5-7 sentences) covering: name + primary role, business + what it sells, who they serve, voice notes (1 sentence on tone), multi-role flag if applicable, location if relevant. CEO-level voice — no jargon. This becomes the always-loaded identity context for every future session.
 
-Format: just the paragraph as the body content under `## 1. Identity` in `shadowdesk/CLAUDE.md`. No subheadings inside that section.
+Format: just the paragraph as the body content under `## 1. Identity` in `CLAUDE.md`. No subheadings inside that section.
 
 ### D — Show-write confirm
 
@@ -311,7 +320,7 @@ Display the written paragraph back:
 1. **"Sounds right" (Recommended)** — write to disk, done.
 2. **"Tweak it"** — *"What needs to change?"* — capture, rewrite, re-confirm. One revision pass, then accept.
 
-Write the final paragraph to `shadowdesk/CLAUDE.md` § 1 Identity, replacing the empty stub. Do **not** touch any other section of CLAUDE.md.
+Write the final paragraph to `CLAUDE.md` § 1 Identity, replacing the empty stub. Do **not** touch any other section of CLAUDE.md.
 
 ## Handoff to /skill-builder (soft ask)
 
