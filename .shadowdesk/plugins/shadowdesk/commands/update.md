@@ -22,7 +22,7 @@ Read the result and decide:
 
 - **If the ShadowDesk plugin is installed from `shadowdesk-starter`** (the free starter toolkit that ships inside the clone) **AND there is no marketplace whose source is the GitHub repo `n-widmer/shadowdesk-marketplace`**, then this person is on the free starter and does **not** have their personal key yet. **Stop here.** Do not pull, do not error, do not touch anything. Say it plainly, no jargon:
 
-  > You're on the free starter toolkit. That's a snapshot of Nick's skills from when you set up, and it works great. What it doesn't do yet is grow on its own. To switch on live updates, so your tools keep getting better every time Nick ships something new, you need your own personal key. Message Nick and he'll send you two quick setup lines. Paste those in, reopen, then run /shadowdesk:update again and it'll pull everything current.
+  > You're on the free starter toolkit. That's a snapshot of Nick's skills from when you set up, and it works great. What it doesn't do yet is grow on its own. To switch on live updates, so your tools keep getting better every time Nick ships something new, you need your own personal key. Nick emails you a one-time setup link with a code in it. When you have the code, run `/shadowdesk:key <code>` right here in the chat — it verifies itself, switches you onto live updates, and stores your key safely. Then fully quit and reopen Claude Code and run `/shadowdesk:update` again and it'll pull everything current.
 
   Then stop. Nothing else runs.
 

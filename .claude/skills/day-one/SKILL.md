@@ -70,7 +70,7 @@ claude plugin install document-skills@anthropic-agent-skills
 
 They also load on the next reopen, alongside the toolkit above.
 
-## Capture the Apify token from the paste-bundle
+## Capture the bundle (Apify token + optional key code)
 
 The user's first message should contain a bundle pasted from `shadowdesk.ai/levelup`:
 
@@ -78,10 +78,13 @@ The user's first message should contain a bundle pasted from `shadowdesk.ai/leve
 Read .claude/skills/day-one/SKILL.md and follow it to walk me through Day One.
 <!-- SHADOWDESK_BUNDLE v1
 APIFY_TOKEN=apify_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+KEY_CODE=sk_live_xxxxxxxxxxxxxxxxxxxx
 -->
 ```
 
-Parse the `APIFY_TOKEN=` line from inside the `SHADOWDESK_BUNDLE v1` HTML-comment block. Hold the value in working memory for this session only. Do **not** `setx` it, do **not** write it to `.env`, do **not** commit it. The token vanishes when this session ends, that is intentional. It only ever scrapes the client's own business profile.
+Parse two lines from inside the `SHADOWDESK_BUNDLE v1` HTML-comment block:
+- **`APIFY_TOKEN=`** — hold in working memory for this session only. Do **not** `setx` it, write it to `.env`, or commit it. It vanishes when the session ends, that is intentional. It only ever scrapes the client's own business profile.
+- **`KEY_CODE=`** (may be absent) — the client's one-time live-updates code. If present, you'll use it in the "Switch on live updates" step below, BEFORE the backup step. If absent, the client is starting on the free starter set, that is fine, just skip that step. Hold it in working memory only; never write or commit it.
 
 **If the bundle is missing the token line** (the user pasted the kickoff prompt by hand, or only pasted the prompt): *"Looks like the LinkedIn-scrape token didn't come through. Quick fix: go to shadowdesk.ai/levelup, enter the passcode, and paste me the whole bundle this time."* Wait for the re-paste. Don't try to teach what the token is, that is exactly the surface I'm hiding.
 
@@ -112,6 +115,35 @@ Day One, Step <N> of 3
 ```
 
 "Type **next**" gates between steps. Reserve `AskUserQuestion` for real either/or choices inside the steps.
+
+## Switch on live updates (only if a KEY_CODE came in the bundle — do this BEFORE the backup)
+
+**Ordering is load-bearing: this MUST run before the backup step below.** The backup step runs
+`rm -rf .git`, which wipes the template's git history. The live-updates switch verifies this is an
+authentic, unmodified clone of Nick's template using that history, so it only works while the clone
+is still pristine. Run it here or not at all.
+
+- **If you parsed a `KEY_CODE`** from the bundle: switch the client onto live updates now. It is a
+  first-party command that ships in this repo and self-verifies before doing anything (it confirms
+  its own checksum against shadowdesk.ai and that this clone descends from Nick's template), stores
+  the key in the OS keychain (never a plaintext file, never touching the client's own GitHub
+  sign-in), and points updates at the paid marketplace. Run it directly by path (the `/shadowdesk:`
+  commands may not be registered until a reopen, but the script is right here in the clone):
+
+  ```
+  bash .shadowdesk/plugins/shadowdesk/scripts/keyed-switch.sh "<KEY_CODE>"
+  ```
+
+  Read `.shadowdesk/plugins/shadowdesk/commands/key.md` if you want the full provenance rationale
+  first — that file is why this is safe to run and not a mystery paste. If the script prints `STOP:`
+  and exits non-zero, it deliberately refused; read its message to the client in plain words and
+  follow it (usually: get a fresh link from Nick). Do NOT work around a refusal with raw git or
+  plugin commands. On success it prints a ✅ line; tell the client, in plain words, that live updates
+  are on and will fully activate when they reopen at the end of Day One (you'll confirm with
+  `/shadowdesk:doctor` then). Then continue to the backup step.
+
+- **If there was no `KEY_CODE`:** skip this entirely. The client is on the free starter set, which
+  works great; Nick switches on live updates later by emailing a one-time link.
 
 ## First, turn on the backup (before Step 1)
 
@@ -369,7 +401,7 @@ You (Nick at first, possibly future facilitators) are on Zoom or in-person, scre
 - [ ] **Node.js installed**, a small engine a few skills run on. Windows: `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it (no Homebrew needed, see the explainer). Close and reopen VS Code after; verify with `node --version`.
 - [ ] GitHub account exists (free), or create one during the publish step; the sign-in screen has a "Create an account" link. The happy path is VS Code's "Publish to GitHub" (no `gh`, no token), but the backup step now **commits first, verifies against GitHub for real (`git ls-remote origin`), and self-repairs from the terminal** if the button flakes, so a half-failed publish gets caught and fixed in the session instead of surfacing later as a dead backup.
 - [ ] `shadowdesk.ai/levelup` → enter passcode → run **Step 1** (clones the starter ShadowDesk OS into Downloads) → choose **File → Open Folder** and pick the `shadowdesk` folder → paste the **Step 2** kickoff bundle into Claude Code chat. `/day-one` starts, and its FIRST action turns the cloned folder into the client's own private GitHub repo (detaches the template, then guides "Publish to GitHub private repository").
-- [ ] **Toolkit is keyless now, no install lines, no email key needed.** The full ShadowDesk toolkit ships INSIDE the clone (the bundled `.shadowdesk` folder). `/day-one` installs it from that bundle at the start and has the client reopen VS Code once so the `/shadowdesk:` commands register. The per-client key is no longer part of setup; it only unlocks live updates (`/shadowdesk:update`) later, and gets sent by email when the client signs on. So the kickoff page is now two steps (clone → Day One), not three.
+- [ ] **The full toolkit ships INSIDE the clone (the bundled `.shadowdesk` folder), so the free set always works with no install lines.** `/day-one` installs it from that bundle at the start and has the client reopen VS Code once so the `/shadowdesk:` commands register. **Live updates (keyed) now fold into Day One when you send a keyed client:** their personal `shadowdesk.ai/levelup?k=<code>` link injects a `KEY_CODE` into the kickoff bundle, and `/day-one` runs the self-verifying `/shadowdesk:key` switch BEFORE the backup step (while the clone's git is still pristine — the switch depends on that). A client with no `KEY_CODE` in the bundle just stays on the free starter, and you can key them up later. Either way the kickoff page is two steps (clone → Day One), not three; the scary 5-command paste is gone. See `decisions/2026-07-07-keyed-switch-on.md`.
 
 **If the client asks what any of these installs are, don't improvise jargon.** The plain-English, no-background answers for every tool above (VS Code, Git, GitHub, Node.js, Git Bash vs PowerShell, and why we skip Homebrew on Mac) live in [`references/whats-getting-installed.md`](../../../references/whats-getting-installed.md). Read it to them.
 

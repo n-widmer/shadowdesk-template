@@ -1,0 +1,4 @@
+# Ship the keyed switch-on scripts byte-identical on every OS, so the sha256 that
+# /shadowdesk:key verifies against shadowdesk.ai matches even after a Windows checkout.
+# (A CRLF conversion would change the bytes and make every keyed install correctly refuse.)
+.shadowdesk/plugins/shadowdesk/scripts/*.sh text eol=lf
