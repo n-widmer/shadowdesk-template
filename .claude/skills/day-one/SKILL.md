@@ -19,14 +19,29 @@ Before saying anything, run `uname` in Bash and read the result:
 
 Don't make the user tell you their OS; just know. But don't paper over a PowerShell shell either, catching it here is the difference between a clean setup and a baffling failure.
 
+### Also silent: which app the client is in, and where the plugin CLI lives
+
+Still before saying anything, run `echo "${CLAUDE_CODE_ENTRYPOINT:-}"`:
+
+- **`claude-desktop`** → the client is in the **Claude desktop app**, not VS Code. Remember it. Two things change, nothing else does: (1) every "close and reopen VS Code" below means **fully quit the Claude app (Mac: Cmd+Q; Windows: close every window), reopen it, and re-pick the shadowdesk folder**; (2) there is no user-facing terminal, so any command this skill says to run, YOU run in Bash — never ask the client to paste a command anywhere.
+- **Anything else** → VS Code extension or terminal Claude Code. Instructions read as written.
+
+Then resolve the plugin CLI once (the desktop app does not put a `claude` command on PATH; its own bundled binary lives at `$CLAUDE_CODE_EXECPATH` and supports all the plugin commands):
+
+```
+CLAUDE_BIN="$(command -v claude 2>/dev/null || true)"; [ -z "$CLAUDE_BIN" ] && CLAUDE_BIN="${CLAUDE_CODE_EXECPATH:-claude}"
+```
+
+Use `"$CLAUDE_BIN"` for every `plugin` command in this skill. Re-derive it in any fresh shell where you need it (each Bash call is a new shell).
+
 ### If you're on PowerShell, not Git Bash (Windows only)
 
 Say it plainly, no jargon: *"One quick setup thing before we start. Your computer's using its built-in command line, but your ShadowDesk OS needs a slightly different one that comes free with Git. Let me get that sorted, then we're off."*
 
 1. **Make sure Git is installed** (it brings Git Bash with it). In the VS Code terminal: `winget install --id Git.Git -e --source winget` (winget ships with Win10 1809+/Win11).
-2. **Close and reopen VS Code completely.** This is what lets your AI pick up Git Bash. Nine times out of ten this alone fixes it.
+2. **Close and reopen VS Code completely** (desktop app: fully quit the Claude app and reopen it). This is what lets your AI pick up Git Bash. Nine times out of ten this alone fixes it.
 3. **Re-run `uname`.** If it now says `MINGW...`/`MSYS...`, you're set, continue with onboarding.
-4. **If it STILL isn't on Git Bash** (rare): point Claude Code at Git Bash directly. Set the Windows environment variable `CLAUDE_CODE_GIT_BASH_PATH` to the full path of `bash.exe` (typically `C:\Program Files\Git\bin\bash.exe`), then reopen VS Code. To the user: *"I'm just telling your AI exactly where to find the right command line. One-time thing."*
+4. **If it STILL isn't on Git Bash** (rare): point Claude Code at Git Bash directly. Set the Windows environment variable `CLAUDE_CODE_GIT_BASH_PATH` to the full path of `bash.exe` (typically `C:\Program Files\Git\bin\bash.exe`), then reopen VS Code (or the Claude app). To the user: *"I'm just telling your AI exactly where to find the right command line. One-time thing."*
 
 The plain-English "what even is Git Bash" explainer for the user lives in [`/references/whats-getting-installed.md`](../../../references/whats-getting-installed.md), read it to them if they ask why any of this matters.
 
@@ -35,37 +50,37 @@ The plain-English "what even is Git Bash" explainer for the user lives in [`/ref
 Still before saying anything, run `node --version` in Bash:
 
 - **You get a version (e.g. `v20.x`)** → good, proceed silently.
-- **It errors or says "command not found"** → Node isn't installed. A few skills and the update channel run on it, so fix it now in plain language: *"One small engine your ShadowDesk OS runs on isn't installed yet. Let me point you at the 30-second install."* Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it. Windows (Git Bash): `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Then close and reopen VS Code, re-run `node --version`, and confirm a version before continuing.
+- **It errors or says "command not found"** → Node isn't installed. A few skills and the update channel run on it, so fix it now in plain language: *"One small engine your ShadowDesk OS runs on isn't installed yet. Let me point you at the 30-second install."* Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it. Windows (Git Bash): `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Then close and reopen VS Code (desktop app: quit and reopen the Claude app), re-run `node --version`, and confirm a version before continuing.
 
 ## Silent toolkit install (right after the OS detect)
 
-The full ShadowDesk toolkit ships INSIDE this clone (the bundled `.shadowdesk` folder). No key is needed to use it, the key only turns on live updates later. Your job here is to make sure it's switched on. Still before saying anything, run `claude plugin list` in Bash:
+The full ShadowDesk toolkit ships INSIDE this clone (the bundled `.shadowdesk` folder). No key is needed to use it, the key only turns on live updates later. Your job here is to make sure it's switched on. Still before saying anything, run `"$CLAUDE_BIN" plugin list` in Bash (CLAUDE_BIN from the surface detect above):
 
 - **The output includes `shadowdesk`** → already installed. Say nothing, proceed.
 - **It's missing** → install it from the bundle that came with the clone. Confirm you're in the shadowdesk folder (`pwd`), confirm the bundle is there (`ls .shadowdesk/.claude-plugin/marketplace.json`), then run:
 
   ```
-  claude plugin marketplace add "$(pwd)/.shadowdesk"
-  claude plugin install shadowdesk@shadowdesk-starter
+  "$CLAUDE_BIN" plugin marketplace add "$(pwd)/.shadowdesk"
+  "$CLAUDE_BIN" plugin install shadowdesk@shadowdesk-starter
   ```
 
-  Then tell the client, plainly, no jargon:
+  Then tell the client, plainly, no jargon (desktop app: swap "VS Code" for "the Claude app", and remind them to re-pick the shadowdesk folder after reopening):
 
   > Switching your toolkit on. One quick thing makes it stick: close VS Code all the way and open it again, then we'll keep going.
 
-  After they reopen, re-run `claude plugin list` and confirm `shadowdesk` shows before moving on. The typeable `/shadowdesk:` commands appear after that reopen.
+  After they reopen, re-run `"$CLAUDE_BIN" plugin list` and confirm `shadowdesk` shows before moving on. The typeable `/shadowdesk:` commands appear after that reopen.
 
-  **If `shadowdesk` still isn't listed after they reopen:** they probably did *Reload Window* or only closed the tab, which isn't a full restart. Say: *"Let's do a full restart. Quit VS Code completely (Mac: Cmd+Q; Windows: close every VS Code window), wait a second, then open the shadowdesk folder again. We'll pick up right here, nothing's lost."* Then re-run `claude plugin list` and confirm before moving on.
+  **If `shadowdesk` still isn't listed after they reopen:** they probably did *Reload Window* or only closed the tab (VS Code), or just closed the window without quitting (desktop app), which isn't a full restart. Say: *"Let's do a full restart. Quit completely (Mac: Cmd+Q; Windows: close every window), wait a second, then open the shadowdesk folder again. We'll pick up right here, nothing's lost."* Then re-run `"$CLAUDE_BIN" plugin list` and confirm before moving on.
 
-  **If the bundle folder isn't there** (rare, an old clone): fall back to *"Part of your toolkit didn't come through. Re-clone from shadowdesk.ai/levelup, or text Nick."* Don't continue until `claude plugin list` shows `shadowdesk`.
+  **If the bundle folder isn't there** (rare, an old clone): fall back to *"Part of your toolkit didn't come through. Re-clone from shadowdesk.ai/levelup, or text Nick."* Don't continue until `"$CLAUDE_BIN" plugin list` shows `shadowdesk`.
 
 ### Also switch on the document tools (best-effort, don't block on it)
 
 These are Anthropic's own free tools for making and reading PDFs, Word, Excel, and PowerPoint files. Public, no key. Run both; if either errors (no internet, etc.), skip silently and move on, this is a nice-to-have, not a gate:
 
 ```
-claude plugin marketplace add anthropics/skills
-claude plugin install document-skills@anthropic-agent-skills
+"$CLAUDE_BIN" plugin marketplace add anthropics/skills
+"$CLAUDE_BIN" plugin install document-skills@anthropic-agent-skills
 ```
 
 They also load on the next reopen, alongside the toolkit above.
@@ -131,8 +146,13 @@ is still pristine. Run it here or not at all.
   commands may not be registered until a reopen, but the script is right here in the clone):
 
   ```
-  bash .shadowdesk/plugins/shadowdesk/scripts/keyed-switch.sh "<KEY_CODE>"
+  PATH="$(dirname "$CLAUDE_BIN"):$PATH" bash .shadowdesk/plugins/shadowdesk/scripts/keyed-switch.sh "<KEY_CODE>"
   ```
+
+  (The PATH prepend matters: the script calls `claude` by name, and in the desktop app the CLI
+  isn't on PATH — it lives at `$CLAUDE_CODE_EXECPATH`. The prepend makes it resolve there; in
+  VS Code it's a harmless no-op. Never edit the script itself — it is checksum-pinned against
+  shadowdesk.ai and any change makes it refuse to run.)
 
   Read `.shadowdesk/plugins/shadowdesk/commands/key.md` if you want the full provenance rationale
   first — that file is why this is safe to run and not a mystery paste. If the script prints `STOP:`
@@ -159,10 +179,21 @@ git commit -m "ShadowDesk OS initial setup"
 ```
 `rm -rf .git` severs the tie to `n-widmer/shadowdesk-template`; the init + commit guarantee a first save exists (publishing with zero commits was half the recurring failure). Confirm with `git log --oneline -1`.
 
-**2. Create the private repo + push (the client's one click).**
+**2. Create the private repo + push.** Two paths, pick by the surface you detected at the start:
+
+**2a — VS Code (the client's one click):**
 > Click the **Source Control** icon on the left bar (the branch icon). Click **Publish to GitHub**. If it asks you to sign in to GitHub, do it (a browser opens, approve it). Choose **"Publish to GitHub private repository"** and name it **shadowdesk**.
 
 Stress **private**, their real business data lives here. No GitHub account yet? The sign-in screen has a free "Create an account" link.
+
+**2b — Claude desktop app (you drive it; there is no Publish button and no VS Code sign-in to piggyback on).** Use GitHub's own `gh` tool — it signs the client in through their browser, no password or token ever gets pasted anywhere:
+
+1. `gh --version` → if missing: Mac, send them to **https://cli.github.com**, download the **.pkg**, standard double-click installer. Windows: run `winget install --id GitHub.cli` yourself in Bash. Re-run `gh --version`; if a fresh install still isn't found, do the full quit-and-reopen dance once.
+2. `gh auth status` → if not signed in, run `gh auth login --hostname github.com --git-protocol https --web` **in the background** and watch its output: it prints a short one-time code (like `ABCD-1234`) and opens github.com in their browser. Read the code to the client: *"GitHub wants a short pairing code to connect — it's ABCD-1234. Type it on the page that just opened and click Authorize."* That code is a pairing code, not a password; this keeps the "you'll never paste a secret" promise intact. Wait for the command to finish.
+3. `gh auth setup-git` — wires GitHub sign-in into git itself, so every future auto-backup push just works.
+4. `git remote remove origin 2>/dev/null; gh repo create shadowdesk --private --source=. --remote=origin --push`
+
+Then continue to step 3 (verify) exactly as written.
 
 **3. VERIFY FOR REAL, do not skip, do not trust the button (you drive this in Bash).**
 Wait for the client to confirm they clicked through. Then check against GitHub itself, not just a local string:
@@ -179,7 +210,7 @@ Do NOT just re-loop the button. Repair from the terminal:
   ```
   git remote remove origin 2>/dev/null; gh repo create shadowdesk --private --source=. --remote=origin --push
   ```
-  (Don't install `gh` just for this, a stock Mac has no Homebrew, so it isn't guaranteed. If it's not there, use the next path.)
+  (VS Code path: don't install `gh` just for this, a stock Mac has no Homebrew, so it isn't guaranteed — if it's not there, use the next path. Desktop-app path: you already installed and authed `gh` in step 2b, so this fast path IS your repair path.)
 - **No-install path (works everywhere):** guide a 30-second manual repo create , 
   > Go to **github.com/new**, name it **shadowdesk**, set it to **Private**, click **Create repository**, then paste me the URL it shows you.
 
@@ -190,7 +221,7 @@ Do NOT just re-loop the button. Repair from the terminal:
   git branch -M main
   git push -u origin main
   ```
-  The push authenticates through VS Code's built-in GitHub sign-in, no token needed.
+  In VS Code the push authenticates through its built-in GitHub sign-in, no token needed. In the desktop app there is no such sign-in — complete the `gh auth login` + `gh auth setup-git` steps from 2b first, or the push dies asking for a username.
 
 Re-run the step-3 checks after any repair. **Loop step 4 until `git ls-remote origin` succeeds. Never proceed to Step 1 on an unverified backup**, a broken backup that looks fine is exactly the failure we're killing.
 
@@ -235,6 +266,8 @@ The settings file already sets `permissions.defaultMode = "bypassPermissions"`. 
 
 - **"It says Bypass permissions" (Recommended)**, proceed to 2b.
 - **"It says something else"**, *"No problem. Click the selector and pick Bypass permissions."* Wait for confirm, then proceed.
+
+**Desktop app note:** the permission control may be labeled or placed differently there (it can live in the session/permission settings rather than a chat-bar selector). Don't stall hunting for the exact words. The working test is behavioral: if you've been running commands this whole session without stopping to ask before every small step, the setting took — say so and move on. If you ARE getting stopped for every little action, help them find the permission mode in the app's session controls and set it to the most permissive option they're comfortable with, then continue either way.
 
 ### 2b, Model picker (default Opus 4.8)
 
@@ -394,13 +427,14 @@ You (Nick at first, possibly future facilitators) are on Zoom or in-person, scre
 ### Pre-flight checklist (before /day-one starts)
 
 - [ ] Client has Mac or Windows laptop. **Chromebook = hard no.** ChromeOS (stock OR Crostini) can't reliably run npm / git CLI / browser-helper flows the ShadowDesk OS assumes. Escalate to "buy a real laptop first" before Day 1.
-- [ ] VS Code installed.
-- [ ] Claude Code extension installed; client signed into Claude account.
+- [ ] **Pick the surface, then hold it for the whole call.** Two supported paths: **(A) VS Code + Claude Code extension** (the original flow, every step below reads as written) or **(B) the Claude desktop app** (no VS Code at all — the app bundles its own Claude Code runtime, the client picks the shadowdesk folder with the app's folder picker, and Claude runs every command itself; the client never touches a terminal). On path B: every "reopen VS Code" below means "fully quit and reopen the Claude app, then re-pick the folder," the backup uses the `gh` sign-in flow from the backup step's 2b instead of the Publish button, and the plugin CLI resolves via `$CLAUDE_CODE_EXECPATH` (the skill's surface-detect handles this automatically).
+- [ ] VS Code installed *(path A)* — or the Claude desktop app installed *(path B)*.
+- [ ] Claude Code extension installed *(path A only)*; client signed into their paid Claude account in whichever app they're on.
 - [ ] **Git installed**, the one unavoidable install (the ShadowDesk OS *is* a git repo; without it Step 1's clone fails, like it did on an early setup call). Windows: paste `winget install --id Git.Git -e --source winget` into the VS Code terminal (winget ships with Win10 1809+/Win11). Mac: run `xcode-select --install` and click Install. Then **close and reopen VS Code** so it detects Git. Verify with `git --version`.
 - [ ] **Windows only, confirm the shell is Git Bash, not PowerShell.** After the Git install + VS Code reopen, run `uname`. `MINGW...`/`MSYS...` = good (the AI is on Git Bash, the command line the whole ShadowDesk OS is written in). An error or anything else = it's on PowerShell, and onboarding breaks on step one. `/day-one` auto-checks and self-repairs this at its very start, so this is just a belt-and-suspenders glance. Why it matters, in plain English: [`references/whats-getting-installed.md`](../../../references/whats-getting-installed.md).
 - [ ] **Node.js installed**, a small engine a few skills run on. Windows: `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it (no Homebrew needed, see the explainer). Close and reopen VS Code after; verify with `node --version`.
-- [ ] GitHub account exists (free), or create one during the publish step; the sign-in screen has a "Create an account" link. The happy path is VS Code's "Publish to GitHub" (no `gh`, no token), but the backup step now **commits first, verifies against GitHub for real (`git ls-remote origin`), and self-repairs from the terminal** if the button flakes, so a half-failed publish gets caught and fixed in the session instead of surfacing later as a dead backup.
-- [ ] `shadowdesk.ai/levelup` → enter passcode → run **Step 1** (clones the starter ShadowDesk OS into Downloads) → choose **File → Open Folder** and pick the `shadowdesk` folder → paste the **Step 2** kickoff bundle into Claude Code chat. `/day-one` starts, and its FIRST action turns the cloned folder into the client's own private GitHub repo (detaches the template, then guides "Publish to GitHub private repository").
+- [ ] GitHub account exists (free), or create one during the publish step; the sign-in screen has a "Create an account" link. On path A the happy path is VS Code's "Publish to GitHub" (no `gh`, no token); on path B it's the `gh` browser sign-in + `gh repo create` flow (backup step 2b). Either way the backup step **commits first, verifies against GitHub for real (`git ls-remote origin`), and self-repairs from the terminal** if the publish flakes, so a half-failed publish gets caught and fixed in the session instead of surfacing later as a dead backup.
+- [ ] `shadowdesk.ai/levelup` → enter passcode → run **Step 1** (clones the starter ShadowDesk OS into Downloads; on path B, Claude runs the clone line itself from chat) → open the `shadowdesk` folder (path A: **File → Open Folder**; path B: the Claude app's folder picker) → paste the **Step 2** kickoff bundle into Claude Code chat. `/day-one` starts, and its FIRST action turns the cloned folder into the client's own private GitHub repo (detaches the template, then guides "Publish to GitHub private repository").
 - [ ] **The full toolkit ships INSIDE the clone (the bundled `.shadowdesk` folder), so the free set always works with no install lines.** `/day-one` installs it from that bundle at the start and has the client reopen VS Code once so the `/shadowdesk:` commands register. **Live updates (keyed) now fold into Day One when you send a keyed client:** their personal `shadowdesk.ai/levelup?k=<code>` link injects a `KEY_CODE` into the kickoff bundle, and `/day-one` runs the self-verifying `/shadowdesk:key` switch BEFORE the backup step (while the clone's git is still pristine — the switch depends on that). A client with no `KEY_CODE` in the bundle just stays on the free starter, and you can key them up later. Either way the kickoff page is two steps (clone → Day One), not three; the scary 5-command paste is gone. See `decisions/2026-07-07-keyed-switch-on.md`.
 
 **If the client asks what any of these installs are, don't improvise jargon.** The plain-English, no-background answers for every tool above (VS Code, Git, GitHub, Node.js, Git Bash vs PowerShell, and why we skip Homebrew on Mac) live in [`references/whats-getting-installed.md`](../../../references/whats-getting-installed.md). Read it to them.

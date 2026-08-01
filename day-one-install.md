@@ -1,24 +1,28 @@
 # Your ShadowDesk Setup: What to Install Before We Talk
 
-created: 07/07/26-20:19-EDT
+created: 07/07/26 - 20:19 EDT
+updated: 07/08/26 - 15:40 EDT (before the call = VS Code + Claude only; Git and Node install live together)
+updated: 08/01/26 - 14:08 EDT (added Path B: Claude desktop app, no VS Code)
 
 Hey. This is your one page for getting ready. It has two parts.
 
-**Section A** is a short list of free and paid sign-ups plus a few programs to install, all on your own, before our call. Budget about 30 minutes. None of it can break anything.
+**Section A** is short: install two free programs and do two quick sign-ups, on your own, before our call. Budget about 15 minutes. None of it can break anything.
 
-**Section B** is what you and I do together on the call. That part is on me. It takes about 30 minutes and you just follow along.
+**Section B** is what you and I do together on the call. That part is on me. It takes about 30 to 40 minutes and you just follow along.
 
 A quick promise up front, because you should be able to trust every step here: **you will never be asked to paste a password or a secret code into anything.** If any step ever shows you a long random string of letters and numbers and asks you to copy it somewhere, stop right there and text me. That is not part of this.
 
-Works the same on a Mac or a Windows laptop. A Chromebook will not work for this, so grab a real laptop if that is all you have. Each step below tells you exactly what you should see when it worked.
+Works the same on a Mac or a Windows laptop. A Chromebook will not work for this, so grab a real laptop if that is all you have.
+
+One more choice before you start: this page walks the **VS Code** setup. If you would rather use the **Claude desktop app** (Claude's own program, no VS Code involved), jump to **Path B** at the bottom. It is shorter.
 
 ---
 
-## Section A: Before our call (about 30 minutes, on your own)
+## Section A: Before our call (about 15 minutes, on your own)
 
-Do these in order. Each one is a normal download-and-install, the same as installing any app.
+Just two installs and two sign-ups. That is it, the rest we do together.
 
-### Step 1: Install VS Code (the main window everything lives in)
+### 1. Install VS Code (the main window everything lives in)
 
 Go to **https://code.visualstudio.com/download**.
 
@@ -28,86 +32,72 @@ Go to **https://code.visualstudio.com/download**.
 
 **You should see:** VS Code opens to a Welcome tab. That is your desk from here on.
 
-### Step 2: Install Node (a small engine a few tools run on)
+### 2. Install Claude (the AI you will actually talk to)
 
-Go to **https://nodejs.org**. Click the big green **LTS** button (LTS just means the stable version, always pick that one).
+First, set up a **paid** Claude plan at **https://claude.ai** if you have not already. The tool only runs on a paid plan, not the free one. Pro works fine, Max if you want the top model.
 
-**On a Mac:** It downloads a file ending in **.pkg**. Double-click it, then click **Continue, Continue, Agree, Install**. It will ask for your Mac login password. That is normal and expected, type it in. Click **Close**.
+Then add the Claude extension inside VS Code: press **Cmd+Shift+X** on a Mac or **Ctrl+Shift+X** on Windows. A search box opens on the left. Type **Claude Code**, find the one published by **Anthropic**, and click **Install**. When it is in, click the little spark icon near the top right to open the chat panel, and sign in with your paid Claude account (a browser window opens, approve it, and it sends you back signed in).
 
-**On Windows:** It downloads a file ending in **.msi**. Double-click it, click **Next**, accept the license, keep every default, and click **Install**. If a box pops up asking to allow changes, click **Yes**. Click **Finish**.
+**You should see:** a chat panel that is ready and does not keep asking you to log in. That panel is where we do the real work.
 
-**You should see:** the installer finishes with no errors. Nothing else visible happens, that is fine.
+### 3. Create a free GitHub account
 
-### Step 3: Install Git (the tool that saves and backs up your work)
+Nothing to install. Go to **https://github.com** and create a free account. This is where your work gets backed up automatically during our call, so it is your safety net. Keep the login handy.
 
-**On a Mac:** Open VS Code. From the top menu click **Terminal**, then **New Terminal**. A panel opens at the bottom. Type this and press Enter:
+**You should see:** you can log into github.com with your new account.
 
-```
-xcode-select --install
-```
-
-A small popup appears. Click **Install**, then **Agree**. Let it finish (it can take a few minutes). No password needed.
-
-**On Windows:** Go to **https://git-scm.com/download/win** and the download starts on its own. Run the file. This installer has a lot of screens, so keep it simple: **click Next and accept every default, all the way to Install.** Click **Finish**.
-
-**You should see:** on both, you can confirm it worked. In the VS Code terminal (top menu: Terminal, then New Terminal), type `git --version` and press Enter. It should print something like `git version 2.40`.
-
-### Step 4: Install Claude Code (the AI you will actually talk to)
-
-This is two small pieces. Do both.
-
-**Piece one, the tool.** Open a fresh terminal in VS Code (Terminal, then New Terminal so it is brand new). Type this one line and press Enter:
-
-```
-npm install -g @anthropic-ai/claude-code
-```
-
-Give it a minute. When it finishes and you are back at a normal prompt, **close that terminal and open a new one**, then type `claude --version` and press Enter.
-
-**You should see:** a version number prints. If it says "not found," you are on an old terminal window, just close it, open a new one, and try again.
-
-**Piece two, the panel.** In VS Code, press **Cmd+Shift+X** on a Mac or **Ctrl+Shift+X** on Windows. A search box opens on the left. Type **Claude Code**, find the one published by **Anthropic**, and click **Install**.
-
-**You should see:** a small spark icon appear near the top right. That is the chat panel where we do the real work.
-
-### Step 5: Sign into your paid Claude account
-
-The tool only runs on a paid Claude plan, not the free one. Pro works fine, Max if you want the top model. Set that up first at **https://claude.ai** if you have not already.
-
-Then, in VS Code, click the spark icon to open the Claude Code panel and click **Sign in**. A browser window opens. Sign in with your paid Claude account, and it sends you back to VS Code already signed in.
-
-**You should see:** the chat panel is ready and does not keep asking you to log in.
-
-### Step 6: Create a free GitHub account
-
-Last one, and there is nothing to install. Go to **https://github.com** and create a free account. This is where your work gets backed up automatically during our call, so it is your safety net. Keep the login handy for the call.
-
-**You should see:** you can log into github.com with your new account. That is all you need.
-
-That is Section A. Once these six are done, you are ready for our call. If you get stuck on any of them, do not sweat it, we can finish it live together.
+That is Section A. VS Code, Claude, a paid Claude plan, and a free GitHub account. If you get stuck on any of it, do not sweat it, we finish it live together.
 
 ---
 
-## Section B: On our call (about 30 minutes, I drive)
+## Section B: On our call (about 30 to 40 minutes, I drive)
 
-You do not prepare anything for this part. I walk you through it live and you paste a couple of things I hand you. Here is the whole shape so nothing feels like a surprise.
+You do not prepare anything for this part. I walk you through it live. Here is the whole shape so nothing feels like a surprise.
 
-**1. Open your personal link.** I will send you a private link that is just for you. You open it, and it shows you two things to copy.
+**1. Install two small tools, together.** First thing on the call, I have you install **Git** and **Node**, the two engines your setup runs on. They are quick, a couple of minutes each, and I talk you through every click. We do these live so you do not have to wrestle with them alone.
 
-**2. Clone ShadowDesk onto your machine.** The link gives you one line to paste into your VS Code terminal. Paste it, press Enter, and a new **shadowdesk** folder lands on your computer. Then you open that folder in VS Code (File, then Open Folder), and if it asks whether you trust the authors, click **Yes**.
+**2. Open your personal link.** I send you a private link that is just for you. You open it, enter the passcode I gave you, and it shows you two things to copy.
 
-**3. Paste one bundle into the chat.** The link gives you one more block of text. You paste that into the **chat panel** (the spark icon), not the terminal, and send it. From here your AI introduces itself and sets everything up for you: your backup, your voice tool, your settings, and a quick look at your business.
+**3. Copy ShadowDesk onto your machine.** The link gives you one line to paste into your VS Code terminal. Paste it, press Enter, and a new **shadowdesk** folder lands on your computer. Then you open that folder in VS Code (File, then Open Folder), and if it asks whether you trust the authors, click **Yes**.
 
-**A heads-up on one moment:** partway through, your AI may pause once and ask you to confirm a step that switches on your live updates. **That pause is expected. Just approve it.** And the same promise from the top still holds: you will never be asked to paste a password or a secret code. If any step ever puts a long random string of letters and numbers in front of you and asks you to copy it, stop and tell me right away.
+**4. Paste one bundle into the chat.** The link gives you one more block of text. You paste that into the **chat panel** (the spark icon), not the terminal, and send it. From here your AI introduces itself and sets everything up: your backup, your voice tool, your settings, your live updates, and a quick look at your business.
 
-**4. Quit and reopen.** Near the end I will have you fully quit VS Code and open it back up. That is a normal step, it is just what makes everything lock into place.
+**A heads-up on one moment:** partway through, your AI may pause once and ask you to confirm the step that switches on your live updates. **That pause is expected. Just approve it.** And the same promise from the top still holds: you will never be asked to paste a password or a secret code. If any step ever puts a long random string in front of you and asks you to copy it, stop and tell me.
 
-**5. Run the final check.** After it reopens, you type this one line in the chat panel and send it:
+**5. Quit and reopen, then the final check.** Near the end I have you fully quit VS Code and open it back up (that is what locks everything in). Then you type this one line in the chat panel and send it:
 
 ```
 /shadowdesk:doctor
 ```
 
-**You should see:** a set of green checks confirming everything is on and healthy. When those are green, you are fully set up, and we spend the rest of our time building your first real tool on something you actually do every week.
+**You should see:** a set of green checks confirming everything is on and healthy.
 
-That is it. Do Section A on your own, show up for Section B, and you will be up and running by the time we hang up. Anything at all feels off, text me: 330-284-2578.
+**6. Build your first tool.** With the boring part done, we spend the rest of our time building your first real tool, on something you actually do every week, so you watch it work before we hang up.
+
+---
+
+## Path B: the Claude desktop app (no VS Code)
+
+Prefer Claude's own desktop app over VS Code? Great, this path is shorter, and the same promise from the top holds the whole way: **you will never be asked to paste a password or a secret code into anything.**
+
+### Before our call (about 10 minutes, on your own)
+
+1. **Set up a paid Claude plan** at **https://claude.ai** if you have not already. Pro works fine, Max if you want the top model.
+2. **Install the Claude desktop app** from **https://claude.ai/download**. Open it and sign in with that paid account. **You should see:** the Claude app open and signed in, ready to chat.
+3. **Create a free GitHub account** at **https://github.com**. This is where your work gets backed up during our call. Keep the login handy.
+
+That is the whole pre-call list. No VS Code, no extension.
+
+### On our call (30 to 40 minutes, I drive)
+
+1. **Install two small tools, together.** Git and Node, the same two engines from the main path, a couple minutes each. I talk you through every click. On this path there is one extra tiny install, GitHub's own helper tool, and I walk you through that one too.
+2. **Open your personal link**, enter the passcode I gave you.
+3. **Copy ShadowDesk onto your machine, the easy way.** There is no terminal in the Claude app, and that is the point: you paste the copy line from your link **straight into the Claude chat**, and your AI runs it for you. Then the app asks which folder to work in, and you pick the new **shadowdesk** folder.
+4. **Paste the bundle into the same chat.** From here it is the same as the main path: your AI introduces itself and sets up your backup, your voice tool, your settings, your live updates, and a quick look at your business.
+5. **One extra moment on this path:** when we switch on your backup, GitHub shows a short pairing code (something like `ABCD-1234`) and your AI tells you exactly where to type it. That is a pairing code, not a password. The no-secrets promise holds.
+6. **Quit and reopen, then the final check.** Near the end you fully quit the Claude app, open it back up, pick the shadowdesk folder again, and type `/shadowdesk:doctor` in the chat. **You should see:** green checks.
+7. **Build your first tool**, same as the main path, before we hang up.
+
+---
+
+That is it. Do Section A (or Path B's before-call list) on your own, show up for the call, and you will be up and running by the time we hang up. Anything at all feels off, text me: 330-284-2578.

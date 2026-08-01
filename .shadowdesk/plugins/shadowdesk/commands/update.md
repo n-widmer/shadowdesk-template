@@ -14,8 +14,9 @@ Two parts: pull the latest shipped skills, then offer Nick's newest operating pa
 Updates are the part that stays personal to a paying client. Before pulling anything, check how this toolkit is installed:
 
 ```!
-echo "--- installed ---"; claude plugin list 2>/dev/null | grep -i "shadowdesk@" || echo "(none)"
-echo "--- marketplaces ---"; claude plugin marketplace list 2>/dev/null | grep -iB1 -A2 "shadowdesk" || echo "(none)"
+CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"
+echo "--- installed ---"; "$CB" plugin list 2>/dev/null | grep -i "shadowdesk@" || echo "(none)"
+echo "--- marketplaces ---"; "$CB" plugin marketplace list 2>/dev/null | grep -iB1 -A2 "shadowdesk" || echo "(none)"
 ```
 
 Read the result and decide:
@@ -30,9 +31,10 @@ Read the result and decide:
 
 ## Part 1: Pull the latest version
 
-1. Refresh the catalog and update the plugin:
-   - `claude plugin marketplace update shadowdesk`
-   - `claude plugin update shadowdesk@shadowdesk`
+1. Refresh the catalog and update the plugin (in Bash; the `$CB` resolver line from Part 0 handles the Claude desktop app, where `claude` isn't on PATH and the bundled binary lives at `$CLAUDE_CODE_EXECPATH`):
+   - `CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"`
+   - `"$CB" plugin marketplace update shadowdesk`
+   - `"$CB" plugin update shadowdesk@shadowdesk`
 2. Tell the user, in plain non-technical language, what changed and that they need to restart Claude Code for a new VERSION to fully take effect. Reassure them their saved settings were not touched.
 
 (Note: if Part 1 just pulled a brand-new version, the very latest patterns and this command's own newest instructions only load after a restart. That's normal: re-run `/shadowdesk:update` after restarting to sync against the newest set.)

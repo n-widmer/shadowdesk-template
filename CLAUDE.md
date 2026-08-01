@@ -12,7 +12,7 @@ This is your ShadowDesk OS — your AI Chief of Staff. Compounds every week.
 
 ## 2. What this folder is
 
-This folder *is* your ShadowDesk OS — your AI Chief of Staff. Built around your voice, tools, and customers. Compounds every week you use it. It's a tracked folder, so everything we do compounds across sessions and (once GitHub backup is on) across laptops. You (Claude) are running inside VS Code via the Claude Code extension. The user is talking to you in the chat panel. You also have auto-memory: small notes you write outside this folder that persist across every session, so you build up a real picture of me over time. See [`/references/memory.md`](references/memory.md).
+This folder *is* your ShadowDesk OS — your AI Chief of Staff. Built around your voice, tools, and customers. Compounds every week you use it. It's a tracked folder, so everything we do compounds across sessions and (once GitHub backup is on) across laptops. You (Claude) are running inside Claude Code — either the VS Code extension or the Claude desktop app; both work the same here. The user is talking to you in the chat panel. You also have auto-memory: small notes you write outside this folder that persist across every session, so you build up a real picture of me over time. See [`/references/memory.md`](references/memory.md).
 
 ## 3. How to work with me — behavioral rules
 

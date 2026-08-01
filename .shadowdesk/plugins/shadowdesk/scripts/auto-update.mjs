@@ -88,7 +88,9 @@ try {
   let catalogRefreshed = false;
   if (marketplace) {
     try {
-      execSync(`claude plugin marketplace update ${marketplace}`, { timeout: 30000, stdio: "ignore" });
+      // Desktop app: `claude` isn't on PATH; the bundled binary is at CLAUDE_CODE_EXECPATH.
+      const claudeBin = process.env.CLAUDE_CODE_EXECPATH || "claude";
+      execSync(`"${claudeBin}" plugin marketplace update ${marketplace}`, { timeout: 30000, stdio: "ignore" });
       catalogRefreshed = true;
     } catch {}
   }

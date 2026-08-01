@@ -40,8 +40,13 @@ This is documented in `CLAUDE.md` § 9. Running it is expected on day one. Proce
 The client's link code is in `$ARGUMENTS` (from their personal Day-One link). Run:
 
 ```!
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/keyed-switch.sh" "$ARGUMENTS"
+CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"
+PATH="$(dirname "$CB"):$PATH" bash "${CLAUDE_PLUGIN_ROOT}/scripts/keyed-switch.sh" "$ARGUMENTS"
 ```
+
+(The PATH prepend is for the Claude desktop app, where the `claude` CLI the script calls isn't
+on PATH — the bundled binary lives at `$CLAUDE_CODE_EXECPATH`. In VS Code or terminal Claude
+Code it's a harmless no-op. The script itself must never be edited; it's checksum-pinned.)
 
 - **If no code was given** (`$ARGUMENTS` empty): ask the client for the code from their Day-One
   link, in plain words, *"Paste me the code Nick sent in your setup link and I'll switch on live

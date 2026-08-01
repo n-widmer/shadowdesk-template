@@ -5,22 +5,25 @@
 # command reads the CHECK: lines and reports green/red to the client in plain language.
 set -u
 MKT_REPO="n-widmer/shadowdesk-marketplace"
+# The Claude desktop app doesn't put `claude` on PATH; its bundled binary is at CLAUDE_CODE_EXECPATH.
+CLAUDE_BIN="${CLAUDE_CODE_EXECPATH:-}"
+[ -n "$CLAUDE_BIN" ] && [ -x "$CLAUDE_BIN" ] || CLAUDE_BIN="$(command -v claude 2>/dev/null || echo claude)"
 pass() { printf 'CHECK: PASS  %s\n' "$*"; }
 fail() { printf 'CHECK: FAIL  %s\n' "$*"; }
 info() { printf 'INFO: %s\n' "$*"; }
 
 # 1. Is the plugin installed, and from the KEYED marketplace (not the free starter)?
-inst="$(claude plugin list 2>/dev/null | grep -i 'shadowdesk@' || true)"
-if printf '%s' "$inst" | grep -qi 'shadowdesk@shadowdesk\b'; then
-  pass "ShadowDesk plugin is installed from the paid marketplace (live updates channel)."
-elif printf '%s' "$inst" | grep -qi 'shadowdesk@shadowdesk-starter'; then
+inst="$("$CLAUDE_BIN" plugin list 2>/dev/null | grep -i 'shadowdesk@' || true)"
+if printf '%s' "$inst" | grep -qi 'shadowdesk@shadowdesk-starter'; then
   fail "Still on the FREE starter toolkit — live updates are not on yet. Run /shadowdesk:key <code> with the code from your Day-One link."
+elif printf '%s' "$inst" | grep -qi 'shadowdesk@shadowdesk'; then
+  pass "ShadowDesk plugin is installed from the paid marketplace (live updates channel)."
 else
   fail "The ShadowDesk plugin isn't showing as installed. Fully quit Claude Code, reopen this folder, and try again."
 fi
 
 # 2. Is the keyed marketplace registered from GitHub (not a local directory)?
-mkt="$(claude plugin marketplace list 2>/dev/null || true)"
+mkt="$("$CLAUDE_BIN" plugin marketplace list 2>/dev/null || true)"
 if printf '%s' "$mkt" | grep -qiE "GitHub \(${MKT_REPO}\)|${MKT_REPO}"; then
   pass "Your live-updates marketplace is connected to Nick's GitHub."
 else
@@ -29,7 +32,7 @@ fi
 
 # 3. Does an authenticated refresh actually work? (proves the key is valid and ongoing updates will pull.)
 if printf '%s' "$mkt" | grep -qiE "${MKT_REPO}"; then
-  if claude plugin marketplace update shadowdesk >/dev/null 2>&1; then
+  if "$CLAUDE_BIN" plugin marketplace update shadowdesk >/dev/null 2>&1; then
     pass "Checked for updates successfully — your key works and updates will pull on their own."
   else
     fail "Couldn't refresh from the marketplace — the key may be expired or not stored. Ask Nick for a fresh one-time link and run /shadowdesk:key again."
