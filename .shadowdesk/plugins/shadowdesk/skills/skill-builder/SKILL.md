@@ -89,7 +89,7 @@ Identify every tool the new skill will need (Gmail, CRM, meeting transcripts, bi
 
 If any required tool is **not** in § 1: **stop. Do not draft the SKILL.md.**
 
-Walk the user through connecting it: go to their Claude settings → Connectors → search the tool → Connect → sign in. Then verify the new MCP server is reachable by running `claude mcp list` (don't claim it's connected without checking). Update `CONNECTIONS.md` § 1 manually; `/end-session` will re-confirm on session close.
+Walk the user through connecting it: go to their Claude settings → Connectors → search the tool → Connect → sign in. Then verify the new MCP server is reachable by running `CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"; "$CB" mcp list` in Bash (the resolver handles the Claude desktop app, where `claude` isn't on PATH — don't claim it's connected without checking). Update `CONNECTIONS.md` § 1 manually; `/end-session` will re-confirm on session close.
 
 Resume only after every required tool is verified connected. No "ship with TODO." No "ship with hard gate inside the skill." Every skill that ships works on first invocation.
 

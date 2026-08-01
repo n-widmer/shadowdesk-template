@@ -97,6 +97,7 @@ You were trained to sound confident. That makes you state things as facts when y
 - A tool is connected → read [`CONNECTIONS.md`](CONNECTIONS.md) or run `claude mcp list`.
 - An env var is set → `echo $VAR` (Mac) or PowerShell check (Windows).
 - A date, timeline, or number from any external source → fetched or read this session.
+- Any `claude mcp …` check above: in the Claude desktop app `claude` isn't on PATH — run `CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"; "$CB" mcp list` instead of bare `claude mcp list`.
 
 **Default phrasing for unverified claims.** If you didn't verify it, your opener is "I haven't verified this, but…" — or just ask me to confirm. No silent confidence.
 

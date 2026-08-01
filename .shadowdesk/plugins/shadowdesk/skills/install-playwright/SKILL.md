@@ -38,13 +38,14 @@ Claude confirms two things are already on the machine:
 
    If either command is not found, install Node.js LTS first, then come back to this skill. Everything here depends on Node being present.
 
-2. **The Claude Code command line works.** The `claude` command needs to run. Check it with:
+2. **The Claude Code command line works.** The `claude` command needs to run. In the Claude desktop app, `claude` is not on PATH — the bundled binary lives at `$CLAUDE_CODE_EXECPATH` — so every command in this skill starts with a one-line resolver that finds the right binary on either surface. Check it with:
 
    ```bash
-   claude --version
+   CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"
+   "$CB" --version
    ```
 
-   If that prints a version, you are good. If it does not, Claude Code itself needs to be installed or fixed before continuing.
+   If that prints a version, you are good. If it does not, Claude Code itself needs to be installed or fixed before continuing. (Each command block below repeats the `CB=` resolver line because every shell call starts fresh.)
 
 ---
 
@@ -65,7 +66,8 @@ Claude uses this exact path everywhere `<profile-path>` appears below.
 This is the one command that wires everything up. It writes the configuration into the correct file (`~/.claude.json`) for you. Do NOT hand-edit `settings.json`; that is the single most common way this breaks (see "If you hit a snag").
 
 ```bash
-claude mcp add playwright npx @playwright/mcp@latest --user-data-dir=<profile-path> --viewport-size=1440,900 --caps=vision
+CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"
+"$CB" mcp add playwright npx @playwright/mcp@latest --user-data-dir=<profile-path> --viewport-size=1440,900 --caps=vision
 ```
 
 Replace `<profile-path>` with the folder from Step 1.
@@ -76,7 +78,7 @@ A note on the three flags, so you know what they do:
 - `--viewport-size=1440,900` forces a normal desktop-sized page, so sites render the way you would see them on a laptop.
 - `--caps=vision` lets Claude actually see the page through screenshots, not just read the underlying text.
 
-The exact `claude mcp add` argument format can vary slightly depending on which version of Claude Code is installed. Some versions need a `--` placed before the flags. If the command above does not register cleanly, check the installed version (`claude --version`) and use the fallback in "If you hit a snag" to write the configuration block directly.
+The exact `claude mcp add` argument format can vary slightly depending on which version of Claude Code is installed. Some versions need a `--` placed before the flags. If the command above does not register cleanly, check the installed version (`"$CB" --version`) and use the fallback in "If you hit a snag" to write the configuration block directly.
 
 ### Step 3: Fully restart Claude Code
 
@@ -87,7 +89,8 @@ Close Claude Code and start a brand-new session. Not a window reload, an actual 
 In the new session, confirm the tool is live:
 
 ```bash
-claude mcp get playwright
+CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"
+"$CB" mcp get playwright
 ```
 
 Look for `Status: Connected`. You can also type `/mcp` inside Claude to see it listed.

@@ -28,7 +28,7 @@ If the file does not exist, skip the question and proceed to Step 2.
 
 ### 2. Connector check (HARD GATE)
 
-Honor § Verify before asserting in [`CLAUDE.md`](../../../CLAUDE.md). Run `claude mcp list` OR read [`CONNECTIONS.md`](../../../CONNECTIONS.md) § 1. Confirm at least one of Gmail / Outlook is connected.
+Honor § Verify before asserting in [`CLAUDE.md`](../../../CLAUDE.md). Run `CB="${CLAUDE_CODE_EXECPATH:-$(command -v claude || echo claude)}"; "$CB" mcp list` in Bash (the resolver handles the Claude desktop app, where `claude` isn't on PATH) OR read [`CONNECTIONS.md`](../../../CONNECTIONS.md) § 1. Confirm at least one of Gmail / Outlook is connected.
 
 If neither is present: **stop. Do not proceed.** Tell the user, in plain words:
 
