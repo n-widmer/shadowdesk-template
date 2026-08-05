@@ -32,7 +32,7 @@ KEY_API="${SHADOWDESK_KEY_API:-https://shadowdesk.ai/api/key}"
 # ?v=2 pins THIS generation of the script. The endpoint keeps serving older generations their own
 # hash, so shipping a new one never bricks a client still holding the previous copy. Bump the v
 # whenever this file changes. The harness overrides the whole URL, so it never sees the param.
-HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash?v=2}"
+HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash?v=3}"
 
 SELF="${BASH_SOURCE[0]}"
 say()  { printf '%s\n' "$*"; }
@@ -93,8 +93,12 @@ KEYED_HELPER_SPEC=""
 
 store_token() {
   local token="$1" helper
+  # $2 = "file" forces the scoped-file store, skipping the OS keychain entirely. Used by main when
+  # the keychain path stores fine but does not actually authenticate (see verify_auth) — the
+  # known-unverified surface is Windows GCM, whose path-matching we cannot rehearse from a Mac.
+  if [ "${2:-}" = "file" ]; then helper=""
   # rehearsal hook: SHADOWDESK_FORCE_HELPER set (even to "") overrides detection ("" = file fallback)
-  if [ "${SHADOWDESK_FORCE_HELPER+x}" = x ]; then helper="$SHADOWDESK_FORCE_HELPER"; else helper="$(detect_helper)"; fi
+  elif [ "${SHADOWDESK_FORCE_HELPER+x}" = x ]; then helper="$SHADOWDESK_FORCE_HELPER"; else helper="$(detect_helper)"; fi
   # ISOLATION: the client already has a global github.com credential (their backup repo), and a
   # global helper matches github.com host-wide — so it would be offered for the marketplace repo
   # FIRST and keyed auth would fail. Reset the inherited helper list for the marketplace URL (an
@@ -110,21 +114,38 @@ store_token() {
   git config --global "credential.${MKT_CRED_URL}.useHttpPath" true
   if [ -n "$helper" ]; then
     git config --global --add "credential.${MKT_CRED_URL}.helper" "$helper"
-    printf 'protocol=https\nhost=github.com\npath=%s.git\nusername=x-access-token\npassword=%s\n\n' \
-      "$MKT_REPO" "$token" | git credential-"$helper" store \
-      || die "the OS keychain refused to store the key. Tell Nick (mention: git-credential-$helper store failed)."
-    KEYED_HELPER_SPEC="$helper"
-    say "[keyed-switch] key stored in the OS keychain (encrypted, url-scoped) ✓"
-  else
-    # fallback: a dedicated 600 file for ONLY this repo url — not ~/.git-credentials, not --replace-all
-    local dir="$HOME/.shadowdesk"; mkdir -p "$dir"; chmod 700 "$dir"
-    local f="$dir/keyed-credentials"
-    git config --global --add "credential.${MKT_CRED_URL}.helper" "store --file=$f"
-    printf 'https://x-access-token:%s@github.com/%s.git\n' "$token" "$MKT_REPO" > "$f"
-    chmod 600 "$f"
-    KEYED_HELPER_SPEC="store --file=$f"
-    say "[keyed-switch] no OS keychain helper found — key stored in a private 600 file scoped to the marketplace ✓"
+    if printf 'protocol=https\nhost=github.com\npath=%s.git\nusername=x-access-token\npassword=%s\n\n' \
+         "$MKT_REPO" "$token" | git credential-"$helper" store 2>/dev/null; then
+      KEYED_HELPER_SPEC="$helper"
+      say "[keyed-switch] key stored in the OS keychain (encrypted, url-scoped) ✓"
+      return 0
+    fi
+    # Do NOT abort: the private-file store below is helper-independent and works everywhere.
+    say "[keyed-switch] the OS keychain would not take the key — using the private-file store instead."
+    store_token "$token" file
+    return $?
   fi
+  # No keychain helper (or one was forced past): a dedicated 600 file for ONLY this repo url —
+  # not ~/.git-credentials, not --replace-all. Plain `store --file=` is core git, so this path
+  # behaves identically on Mac, Windows and Linux regardless of which credential store is present.
+  local dir="$HOME/.shadowdesk"; mkdir -p "$dir"; chmod 700 "$dir"
+  local f="$dir/keyed-credentials"
+  git config --global --add "credential.${MKT_CRED_URL}.helper" "store --file=$f"
+  printf 'https://x-access-token:%s@github.com/%s.git\n' "$token" "$MKT_REPO" > "$f"
+  chmod 600 "$f"
+  KEYED_HELPER_SPEC="store --file=$f"
+  say "[keyed-switch] key stored in a private 600 file scoped to the marketplace ✓"
+}
+
+# ---- 4. PROVE the key actually authenticates, before touching the marketplace ----
+# Storing a credential and RESOLVING it are different things, and the resolve side is the part we
+# cannot rehearse for every platform: Windows GCM's path matching is not the same code as macOS
+# osxkeychain's. So do not assume — ask git. This is exactly what `marketplace add` is about to do.
+# The repo is private and the client is not a collaborator, so a success here can only mean OUR key
+# was the one offered. Prompts are hard-disabled so this can never hang on a client call.
+verify_auth() {
+  GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never GIT_ASKPASS=echo SSH_ASKPASS=echo \
+    git -C "$HOME" ls-remote "$MKT_CRED_URL" >/dev/null 2>&1
 }
 
 # ---- 5. FLIP the marketplace: add + install BEFORE remove (never zero-marketplace) ----
@@ -181,6 +202,18 @@ case "$TOKEN" in
 esac
 
 store_token "$TOKEN"
+
+# Prove it before flipping anything. If the OS keychain took the key but does not hand it back for
+# this URL (the unrehearsed Windows-GCM risk), re-store via the helper-independent private file and
+# prove that instead. Only a proven-working key is allowed to reach the marketplace flip.
+if verify_auth; then
+  say "[keyed-switch] key verified against the marketplace over the network ✓"
+else
+  say "[keyed-switch] that store did not authenticate — retrying with the private-file store…"
+  store_token "$TOKEN" file
+  verify_auth || die "the key was stored but GitHub would not accept it for the marketplace. Nothing was flipped, so your free starter is untouched. Tell Nick and mention: verify_auth failed on $(uname -s), helper='${KEYED_HELPER_SPEC}'."
+  say "[keyed-switch] key verified against the marketplace over the network ✓"
+fi
 unset TOKEN
 flip_marketplace
 

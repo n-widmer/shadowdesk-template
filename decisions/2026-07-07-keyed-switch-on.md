@@ -123,13 +123,57 @@ there is nothing to pull from. Un-keyed client + changed script = bricked `/shad
   `route.ts`, bump the `?v=` in the script. Retire an old generation only once no client holds it.
 - Live-verified 08/05: v1 → `7f1237ca…`, v2 → `07b1e9b7…`, no-param → v1, `?v=99` → 503.
 
+### 08/05/26 - 16:00 EDT — v0.14.9: stop assuming the store works, PROVE it (pin v3)
+
+Anthony is on **Windows**. Everything above was verified on macOS against `osxkeychain`. Splitting
+what actually carries over:
+
+- **Carries over (high confidence):** the `.git` scope fix. `credential.<url>.*` matching is core
+  git, identical on every platform. Git for Windows also ships a system-level generic
+  `credential.helper = manager`, the exact analogue of the Xcode `osxkeychain` inject, and the
+  scoped empty-reset clears a generic system helper — proven on Mac, same git code on Windows.
+- **Does NOT carry over (unrehearsable from a Mac):** the **store → resolve round trip**. Windows
+  GCM is a different implementation with its own path matching and its own GitHub auth provider;
+  `git credential-manager store` succeeding does not prove `git` will hand that credential back for
+  this URL. `detect_helper`'s `[ -x "$x/git-credential-manager" ]` probe also relies on MSYS `.exe`
+  resolution.
+
+Rather than ship another untested assumption onto a client call, the script now **proves it at
+runtime and heals itself**:
+
+- `verify_auth()` runs `git ls-remote` against `MKT_CRED_URL` after storing and BEFORE the flip.
+  The repo is private and the client is not a collaborator, so success can only mean OUR key was
+  offered. Prompts hard-disabled (`GIT_TERMINAL_PROMPT=0`, `GCM_INTERACTIVE=never`, `GIT_ASKPASS`,
+  `SSH_ASKPASS`) so it can never hang on a call.
+- If the keychain store does not resolve, main re-stores via the **private-file store** (plain
+  `store --file=`, core git, no platform variance) and re-verifies. Only a proven key reaches the
+  flip; otherwise it dies with the starter intact.
+- A keychain that refuses the store no longer aborts either — it falls through to the file store.
+- **This makes `detect_helper` non-critical:** a wrong or missed Windows probe now degrades to the
+  file store, which is verified, instead of failing the install.
+
+**Real-token rehearsal — the 07/07 ship-gate is CLOSED.** `verify-keyed-real-token.sh` runs
+Anthony's actual minted PAT against the real private marketplace over the network: the client's own
+credential cannot open the repo, our key can, the key opens nothing else of Nick's, and a bogus key
+correctly fails. `verify-keyed-selfheal.sh` simulates the precise Windows-GCM failure (a helper that
+accepts `store` and returns nothing on `get`) and confirms the heal path end to end with the real
+token. Neither ever prints the token. **Still genuinely unverified: Windows itself.** The design no
+longer depends on it being right — that is the point.
+
 ### Verification that now gates this flow
 - `ShadowDesk/rehearse-keyed-v2.sh` — clean-cred, mocked pin. **Check 5 added**, covering the
   global url-scope that `marketplace add` actually uses. Fails on the old script, passes on the new.
 - `ShadowDesk/verify-keyed-competing-cred.sh` — **new.** Runs against PRODUCTION shadowdesk.ai with
   `GIT_CONFIG_NOSYSTEM` deliberately NOT set, so the Xcode CLT system `credential.helper =
   osxkeychain` is live, plus a planted client github.com credential. This is the machine state the
-  clean-cred rehearsal could never produce. Run BOTH before shipping any keyed-switch change.
+  clean-cred rehearsal could never produce.
+- `ShadowDesk/verify-keyed-real-token.sh` — **new.** Real minted PAT, real private repo, real
+  network. Closes the 07/07 ship-gate.
+- `ShadowDesk/verify-keyed-selfheal.sh` — **new.** Fake helper that stores but never resolves;
+  proves the runtime heal path.
+
+Run **all four** before shipping any keyed-switch change. They live under `ShadowDesk/` (gitignored,
+alongside `keyed-ops/`), because the last two read a real client token.
 
 ## Locked delivery design
 - Token NEVER pasted, NEVER human-visible. Client pastes only an opaque one-time link code `k`.
