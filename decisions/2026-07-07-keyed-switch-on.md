@@ -1,6 +1,7 @@
 # Keyed switch-on redesign — build decisions
 
 created: 07/07/26 - 20:05 EDT
+updated: 08/05/26 - 14:19 EDT
 
 Implements `ShadowDesk/KEYED-ONBOARDING-REDESIGN.md` (3-agent brainstorm output). This file
 records the decisions the build locked, INCLUDING two facts the brainstorm couldn't know that
@@ -76,6 +77,60 @@ flow (it only passed because the rehearsal used a CLEAN credential env). Finding
 - Still requires a real-machine rehearsal WITH Nick's token on Mac AND Windows (osxkeychain vs GCM
   path-matching for the initial add) — this is part of P3's ship-gate.
 
+### 08/05/26 - 14:19 EDT — CORRECTION: the "unreliable global reset" was the .git suffix all along
+
+The 07/07 finding above ("a global url-scoped empty-reset does NOT reliably clear a same-file
+generic helper, verified failing on git 2.50") was a **misdiagnosis**. The reset works fine. What
+failed was the SCOPE never matching.
+
+- git matches `credential.<url>.*` on the **exact url path**. The marketplace clone's remote is
+  `https://github.com/n-widmer/shadowdesk-marketplace.git` (verified against the real clone), but
+  `store_token()` scoped its config to `$MKT_URL`, which had **no `.git` suffix**. So the entire
+  scoped block — the empty reset, `useHttpPath`, and our helper — never applied to the actual
+  credential request. The client's own github.com helper answered instead.
+- Reproduced on git 2.50.1 and fixed: with the scope corrected to `${MKT_URL}.git`, the empty reset
+  DOES clear both a same-file generic helper AND the Xcode CLT system-level
+  `credential.helper = osxkeychain`, and our token wins the initial `marketplace add`.
+- **Why every rehearsal passed anyway:** `rehearse-keyed-v2.sh` only ever resolved credentials
+  through the repo-local pin (check 4), which is applied AFTER `marketplace add` succeeds and is
+  unscoped, so it was never sensitive to the suffix. The global-scope path that `marketplace add`
+  actually uses was untested. It also sets `GIT_CONFIG_NOSYSTEM=1`, hiding the Xcode osxkeychain
+  helper that exists on every Mac. Added as **check 5** (global url-scope, no repo-local pin,
+  competing credential present) — it fails on the old script and passes on the fixed one.
+- **Consequence for the load-bearing ordering above:** keying before day-one's backup step is no
+  longer the only thing preventing a collision — the corrected scope beats a pre-existing github
+  credential outright. Keep the ordering (it is still the cleanest state), but it is now
+  defence-in-depth rather than the single point of failure.
+- **Rejected while fixing:** also scoping the suffix-less url as belt-and-suspenders. Check 5
+  proved it is dead config — the token is stored under `path=…marketplace.git`, so with
+  `useHttpPath=true` the suffix-less scope can never resolve a credential. One exact scope only.
+
+### 08/05/26 - 14:50 EDT — the hash pin is now VERSIONED (it had to be)
+
+Shipping the fix above exposed a structural flaw in the pin itself. `/api/key-skill-hash` served a
+single value and the script compares it exactly, so moving the pin **correctly refuses every
+un-keyed client still holding the previous copy of the script** — and those clients have no
+supported way to refresh it: the free starter is a frozen directory marketplace inside their clone,
+`/shadowdesk:update` hard-stops at the un-keyed gate, and day-one has already run `rm -rf .git` so
+there is nothing to pull from. Un-keyed client + changed script = bricked `/shadowdesk:key`.
+
+- **Resolution:** the endpoint is keyed by generation. `?v=2` → `KEYED_SWITCH_SHA256_V2` (current),
+  `?v=1` or no param → `KEYED_SWITCH_SHA256` (pre-08/05 script). The no-param default MUST stay on
+  v1 forever, because scripts that shipped before versioning send no param. Unknown v → 503.
+- The script pins its own generation in the `HASH_API` default (`…/key-skill-hash?v=2`). The
+  rehearsal harness overrides the whole URL, so it never sees the param.
+- **Shipping a new generation:** add `KEYED_SWITCH_SHA256_V<n>` in Vercel, add the line in
+  `route.ts`, bump the `?v=` in the script. Retire an old generation only once no client holds it.
+- Live-verified 08/05: v1 → `7f1237ca…`, v2 → `07b1e9b7…`, no-param → v1, `?v=99` → 503.
+
+### Verification that now gates this flow
+- `ShadowDesk/rehearse-keyed-v2.sh` — clean-cred, mocked pin. **Check 5 added**, covering the
+  global url-scope that `marketplace add` actually uses. Fails on the old script, passes on the new.
+- `ShadowDesk/verify-keyed-competing-cred.sh` — **new.** Runs against PRODUCTION shadowdesk.ai with
+  `GIT_CONFIG_NOSYSTEM` deliberately NOT set, so the Xcode CLT system `credential.helper =
+  osxkeychain` is live, plus a planted client github.com credential. This is the machine state the
+  clean-cred rehearsal could never produce. Run BOTH before shipping any keyed-switch change.
+
 ## Locked delivery design
 - Token NEVER pasted, NEVER human-visible. Client pastes only an opaque one-time link code `k`.
 - `shadowdesk.ai/api/key?k=<code>` returns the per-client PAT once over TLS, then burns the code.
@@ -87,6 +142,8 @@ flow (it only passed because the rehearsal used a CLEAN credential env). Finding
 - Template URL: `https://github.com/n-widmer/shadowdesk-template.git`
 - Template root SHA: `478202a5369132a28309f0495c087628e4a45cfb`
 - Keyed marketplace repo: `n-widmer/shadowdesk-marketplace`  (marketplace name: `shadowdesk`)
+- Credential-scope URL: `https://github.com/n-widmer/shadowdesk-marketplace.git` — **the `.git`
+  suffix is load-bearing**, see the 08/05/26 correction above. Never scope without it.
 - Free starter marketplace name: `shadowdesk-starter`
 - Token endpoint: `https://shadowdesk.ai/api/key?k=<code>`
 - Skill-hash endpoint: `https://shadowdesk.ai/api/key-skill-hash`

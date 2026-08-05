@@ -24,9 +24,15 @@ EXPECT_URL="https://github.com/n-widmer/shadowdesk-template.git"
 ROOT_SHA="478202a5369132a28309f0495c087628e4a45cfb"
 MKT_REPO="n-widmer/shadowdesk-marketplace"
 MKT_URL="https://github.com/n-widmer/shadowdesk-marketplace"
+# Credential scopes are matched by git on the EXACT url path, and the marketplace clone's remote
+# is .../shadowdesk-marketplace.git — so the credential config must carry the .git suffix too.
+MKT_CRED_URL="${MKT_URL}.git"
 STARTER="shadowdesk-starter"
 KEY_API="${SHADOWDESK_KEY_API:-https://shadowdesk.ai/api/key}"
-HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash}"
+# ?v=2 pins THIS generation of the script. The endpoint keeps serving older generations their own
+# hash, so shipping a new one never bricks a client still holding the previous copy. Bump the v
+# whenever this file changes. The harness overrides the whole URL, so it never sees the param.
+HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash?v=2}"
 
 SELF="${BASH_SOURCE[0]}"
 say()  { printf '%s\n' "$*"; }
@@ -95,10 +101,15 @@ store_token() {
   # empty first value resets it), so ONLY our helper is consulted for that one repo. This is
   # url-scoped: the client's own repos still use their global helper, untouched. Never touch the
   # global credential.helper, never --replace-all it.
-  git config --global --replace-all "credential.${MKT_URL}.helper" ""
-  git config --global "credential.${MKT_URL}.useHttpPath" true
+  #
+  # The scope MUST be MKT_CRED_URL (with .git), not MKT_URL. git matches credential.<url>.* on the
+  # exact path, and the clone requests .../shadowdesk-marketplace.git — a scope missing the suffix
+  # never matches, so the reset never fires and the client's own helper silently wins the first
+  # `marketplace add`. This is exact-path-scoped, so it cannot reach the client's other repos.
+  git config --global --replace-all "credential.${MKT_CRED_URL}.helper" ""
+  git config --global "credential.${MKT_CRED_URL}.useHttpPath" true
   if [ -n "$helper" ]; then
-    git config --global --add "credential.${MKT_URL}.helper" "$helper"
+    git config --global --add "credential.${MKT_CRED_URL}.helper" "$helper"
     printf 'protocol=https\nhost=github.com\npath=%s.git\nusername=x-access-token\npassword=%s\n\n' \
       "$MKT_REPO" "$token" | git credential-"$helper" store \
       || die "the OS keychain refused to store the key. Tell Nick (mention: git-credential-$helper store failed)."
@@ -108,7 +119,7 @@ store_token() {
     # fallback: a dedicated 600 file for ONLY this repo url — not ~/.git-credentials, not --replace-all
     local dir="$HOME/.shadowdesk"; mkdir -p "$dir"; chmod 700 "$dir"
     local f="$dir/keyed-credentials"
-    git config --global --add "credential.${MKT_URL}.helper" "store --file=$f"
+    git config --global --add "credential.${MKT_CRED_URL}.helper" "store --file=$f"
     printf 'https://x-access-token:%s@github.com/%s.git\n' "$token" "$MKT_REPO" > "$f"
     chmod 600 "$f"
     KEYED_HELPER_SPEC="store --file=$f"
