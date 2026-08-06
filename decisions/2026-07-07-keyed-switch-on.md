@@ -160,6 +160,43 @@ accepts `store` and returns nothing on `get`) and confirms the heal path end to 
 token. Neither ever prints the token. **Still genuinely unverified: Windows itself.** The design no
 longer depends on it being right — that is the point.
 
+### 08/05/26 - 20:04 EDT — WINDOWS VERIFIED on a real machine (GitHub Actions windows-latest)
+
+The unverified surface from the v0.14.9 entry is now closed. Run 31058390978, Windows Server 2025
+(10.0.26100), git 2.55.0.windows.3, GCM at `/mingw64/bin/git-credential-manager`. All six checks
+green against the SHIPPED script pulled from the public template repo.
+
+- **The competing helper is real and system-level, as predicted:**
+  `C:/Program Files/Git/etc/gitconfig → credential.helper manager`. Every Windows client has a
+  generic, unscoped github.com helper from minute one — the exact analogue of the Xcode
+  `osxkeychain` inject on Mac. This is what beat us before the `.git` fix.
+- **Provenance holds on Windows:** shipped script sha256 `9fd0dd73…` == live `?v=3`. `--check`
+  passed. `uname -s` = `MINGW64_NT-10.0-26100`, so `detect_helper`'s MINGW case arm matches.
+- **`detect_helper` finds GCM on Windows** (`keychain helper: manager`) — the `.exe`-resolution
+  worry was unfounded.
+- **THE REAL UNKNOWN IS ANSWERED: GCM's store→resolve round trip works.** With the client's own
+  credential planted AND the system `manager` helper live, the clone url resolved to OUR key.
+  The resulting scope was exactly right: competitor helper, then our empty reset, `useHttpPath`,
+  then `manager`.
+- Isolation held (our key offered to no other repo). The private-file store also routes correctly
+  on Windows, so the heal target is sound there too.
+- **Bad-key run behaved exactly as designed and did not hang:** stored in GCM → `did not
+  authenticate` → healed to the private file → re-verified → refused → STOP with the starter
+  intact, exit 1, error naming `MINGW64_NT-10.0-26100` and the helper spec.
+
+**Honest scope of this evidence.** Windows Server 2025 x64 with Git for Windows + GCM — the same
+git/credential stack Anthony has, not the same edition or hardware. It does NOT exercise the Claude
+Code desktop app, the real `claude plugin marketplace add`, or the clone-and-install journey
+(`claude` is absent on the runner, as the log notes). Those remain unwatched on Windows.
+
+Local VM attempts, for the record: VMware Fusion needs a privileged first-run (admin password +
+system-extension approval) that was never completed. VirtualBox 7.2.2 on Apple Silicon IS
+arm64-native and lists `Windows11_arm64`, and the Win11 ARM64 ISO boots far enough that its EFI
+loads `bootaa64.efi` — but only after repacking the installer onto a FAT32 disk, because that EFI
+reads FAT and not the ISO's UDF. It then hangs: `AHCI#0: Reset the HBA` three times and a frozen
+console. VirtualBox's ARM build runs Linux guests fine (Kali) but cannot boot a Windows guest.
+Harness: `ShadowDesk/verify-keyed-windows-ci.yml` — re-run it on any keyed-switch change.
+
 ### Verification that now gates this flow
 - `ShadowDesk/rehearse-keyed-v2.sh` — clean-cred, mocked pin. **Check 5 added**, covering the
   global url-scope that `marketplace add` actually uses. Fails on the old script, passes on the new.
