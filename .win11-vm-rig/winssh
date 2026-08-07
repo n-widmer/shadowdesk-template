@@ -1,0 +1,10 @@
+#!/bin/bash
+# winssh - run a command in the Win11-AIOS VM over the UTM port forward.
+# Default remote shell is PowerShell (set by stage1.ps1).
+KEY="/private/tmp/claude-501/-Users-nickwidmer-Desktop-NickSecondBrain/a5b42824-4b7f-4039-bb3b-f55344988182/scratchpad/keys/win11vm_ed25519"
+exec ssh -i "$KEY" -p 2222 \
+  -o StrictHostKeyChecking=no \
+  -o UserKnownHostsFile=/dev/null \
+  -o LogLevel=ERROR \
+  -o ConnectTimeout=10 \
+  aios@127.0.0.1 "$@"

@@ -1,0 +1,14 @@
+#!/bin/bash
+# winpush <local-file> <remote-windows-path>
+# scp is unreliable when sshd's DefaultShell is PowerShell, so stream the file
+# base64-encoded over stdin and decode it guest-side.
+set -euo pipefail
+SD="/private/tmp/claude-501/-Users-nickwidmer-Desktop-NickSecondBrain/a5b42824-4b7f-4039-bb3b-f55344988182/scratchpad"
+LOCAL="$1"
+REMOTE="$2"
+base64 -i "$LOCAL" | "$SD/winssh" \
+  "\$b = [Console]::In.ReadToEnd(); \
+   \$d = Split-Path -Parent '$REMOTE'; \
+   if (\$d) { New-Item -ItemType Directory -Force -Path \$d | Out-Null }; \
+   [IO.File]::WriteAllBytes('$REMOTE', [Convert]::FromBase64String(\$b)); \
+   Write-Output ('wrote ' + (Get-Item '$REMOTE').Length + ' bytes to $REMOTE')"
