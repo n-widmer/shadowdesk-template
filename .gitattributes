@@ -2,3 +2,7 @@
 # /shadowdesk:key verifies against shadowdesk.ai matches even after a Windows checkout.
 # (A CRLF conversion would change the bytes and make every keyed install correctly refuse.)
 .shadowdesk/plugins/shadowdesk/scripts/*.sh text eol=lf
+
+# Every other shipped .sh too: Git for Windows defaults to autocrlf=true, so an
+# unpinned script checks out CRLF on a client's Windows laptop.
+*.sh text eol=lf

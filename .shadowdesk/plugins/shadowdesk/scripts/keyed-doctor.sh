@@ -13,10 +13,12 @@ fail() { printf 'CHECK: FAIL  %s\n' "$*"; }
 info() { printf 'INFO: %s\n' "$*"; }
 
 # 1. Is the plugin installed, and from the KEYED marketplace (not the free starter)?
+on_paid=0
 inst="$("$CLAUDE_BIN" plugin list 2>/dev/null | grep -i 'shadowdesk@' || true)"
 if printf '%s' "$inst" | grep -qi 'shadowdesk@shadowdesk-starter'; then
   fail "Still on the FREE starter toolkit — live updates are not on yet. Run /shadowdesk:key <code> with the code from your Day-One link."
 elif printf '%s' "$inst" | grep -qi 'shadowdesk@shadowdesk'; then
+  on_paid=1
   pass "ShadowDesk plugin is installed from the paid marketplace (live updates channel)."
 else
   fail "The ShadowDesk plugin isn't showing as installed. Fully quit Claude Code, reopen this folder, and try again."
@@ -42,7 +44,9 @@ else
 fi
 
 # 4. Free starter removed? (nice-to-have; not a failure if still present)
-if printf '%s' "$mkt" | grep -qi 'shadowdesk-starter'; then
+# Only reassure once the paid channel is actually live — otherwise this contradicts check 1,
+# which just told the client they're still on the free starter.
+if [ "$on_paid" = 1 ] && printf '%s' "$mkt" | grep -qi 'shadowdesk-starter'; then
   info "The free starter marketplace is still listed — harmless, but you can ignore it; you're on the paid channel now."
 fi
 exit 0

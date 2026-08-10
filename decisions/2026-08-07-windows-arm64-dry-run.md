@@ -27,7 +27,8 @@ Every one of these was run on the real guest, not inferred.
 2. **Node** — `winget install --id OpenJS.NodeJS.LTS -e` → v24.19.0, **native arm64**
    (`process.arch` = `arm64`, not emulated x64).
 3. **VS Code** — installs via winget.
-4. **Claude Code CLI** — `npm i -g @anthropic-ai/claude-code` → 2.1.224, functional.
+4. **Claude Code CLI** — `npm i -g @anthropic-ai/claude-code` → 2.1.224, and the installed
+   `bin/claude.exe` is a **native ARM64** binary (PE `0xAA64`), not a Node shim. See § C.
 5. **Shell detect** — `uname -s` returns `MINGW64_NT-10.0-26200-ARM64`, `MSYSTEM=CLANGARM64`.
    day-one's `MINGW*`/`MSYS*` match fires correctly on ARM64.
 6. **Timestamp rule (CLAUDE.md § 7)** — bare `date '+%m/%d/%y - %H:%M %Z'` returns
@@ -100,20 +101,36 @@ and **MSYS2's bash tolerates the CRLF; both ran correctly.** So this is an incon
 latent hazard, not a live break. Worth a one-line fix while it is cheap: widen the pin to
 `*.sh text eol=lf`.
 
-### C. npm now skips the Claude Code postinstall — affects every fresh install
+### C. ~~npm skips the Claude Code postinstall~~ — RETRACTED, this was a false positive
 
-npm 11.17 emitted:
+**Corrected 08/07/26 - 15:02 EDT. No action needed. Do not change day-one for this.**
+
+npm 11.17 emits an advisory during the install:
 
 ```
 npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
 npm warn allow-scripts   @anthropic-ai/claude-code@2.1.224 (postinstall: node install.cjs)
 ```
 
-Confirmed skipped: `install.cjs` ships in the package but produced no vendor/native artifacts.
-The CLI still works — `--version`, `--help`, and all `plugin` subcommands behave — so day-one is
-not blocked. But this is new npm behavior that will hit every client, and it is worth deciding
-deliberately whether day-one should pass `--allow-scripts=@anthropic-ai/claude-code` or move to
-the native installer.
+I first read that as the postinstall being blocked. It was not. The message is npm warning about
+**future** enforcement; the script still ran. Proof:
+
+| check | result |
+|---|---|
+| `bin/claude.exe` vs the `claude-code-win32-arm64` package binary | **byte-identical**, SHA256 `105B3396…C102` |
+| `bin/claude.exe` PE machine type | `0xAA64` — **native ARM64** |
+| runs standalone | returns `2.1.224 (Claude Code)` |
+
+What `install.cjs` does is copy the matching native binary over a placeholder in `bin/`, so that
+"`claude` execs the native binary directly — no Node.js process stays resident." That is exactly
+the end state on disk, so it ran.
+
+My original check looked for the wrong artifacts — ripgrep / `vendor/` / `*.node` — rather than
+the one artifact that actually matters, the `bin/claude.exe` replacement. Lesson for re-testing:
+verify a postinstall by hashing its output, not by guessing at filenames.
+
+**The real result is a positive one:** Claude Code on Windows ARM64 installs and runs as a fully
+native ARM64 binary with no resident Node process.
 
 ### D. `detect_helper`'s exec-path probe never fires on Windows — robustness note
 
@@ -128,15 +145,108 @@ Git Bash is at `C:\Program Files\Git\bin\bash.exe` and nothing puts it on PATH. 
 covers this with `CLAUDE_CODE_GIT_BASH_PATH` — this confirms that guidance is necessary, not
 belt-and-braces.
 
+## Fixes applied
+
+### 08/07/26 - 15:02 EDT — findings A and B fixed and verified
+
+**A. `keyed-doctor.sh`** — check 4 now only reassures once the paid channel is actually live.
+Check 1 sets `on_paid`; check 4 is gated on it. Verified both directions with a stub CLI:
+
+| state | before | after |
+|---|---|---|
+| free starter | FAIL "still on FREE starter" **+** INFO "you're on the paid channel now" | FAIL only — contradiction gone |
+| paid channel | INFO fires | INFO still fires — no regression |
+
+Then re-run on the real Windows VM: contradiction gone there too.
+
+Safe to edit — only `keyed-switch.sh` is checksum-pinned (it self-verifies `$SELF`);
+`keyed-doctor.sh` is not covered by any integrity check.
+
+**B. `.gitattributes`** — added `*.sh text eol=lf` alongside the existing scripts-only rule.
+`git check-attr` now reports `eol: lf` for `start-server.sh` and `stop-server.sh`, which
+previously checked out CRLF on Windows.
+
+**The check that mattered:** `keyed-switch.sh`'s sha256 is **unchanged** after the
+`.gitattributes` edit — still `9fd0dd734d75243a1f07b5956acda777dd53e57f9969397be77f8a2f18a0c801`.
+The broader glob is a superset of the existing pin, so the checksum the keyed flow verifies
+against shadowdesk.ai is untouched. Had this changed, every keyed install would have started
+refusing.
+
+Both changes are uncommitted — Nick's call on when to commit and push to the template.
+
+## Path B — the Claude desktop app on Windows ARM64
+
+updated: 08/07/26 - 14:34 EDT
+
+Everything above was the **VS Code / CLI** surface. Path B is a genuinely different surface, and
+my probes confirmed I was never on it: `CLAUDE_CODE_ENTRYPOINT` came back `<unset>` throughout.
+So I installed the desktop app in the same VM.
+
+- **A native Windows ARM64 build exists** — `Claude-Setup-arm64.exe` (131 MB) from Anthropic's
+  official download host. ARM64 clients are not stuck on x64 emulation.
+- **It installs and runs native**: `arch: 'arm64'`, Electron on Node 22.19.0, app version 0.14.10.
+- **It auto-updates on launch** — within a minute it had pulled `app-1.26832.0` alongside
+  `app-0.14.10`. Version drift is automatic, so pinning a version in client docs will go stale.
+- **The desktop app and the CLI share `~/.claude`.** After the CLI-side install, `~/.claude`
+  holds `plugins/` and `settings.json`, so the `shadowdesk@shadowdesk-starter` plugin installed
+  from the CLI is already visible to the desktop app. One toolkit, both surfaces.
+- **`app-0.14.10\claude.exe` does NOT answer CLI subcommands.** Invoking it with `plugin list`
+  launched the GUI and ignored the arguments. There is also no separate payload at
+  `%LOCALAPPDATA%\claude-code`.
+
+That last point is the operational one: `CLAUDE_CODE_EXECPATH` is set **by the app for the Claude
+Code process it spawns**, so it cannot be resolved from outside a running session. This matches
+how `keyed-doctor.sh:9-10` and day-one already resolve `CLAUDE_BIN` — nothing is broken — but it
+does mean Path B's `plugin` commands can only be exercised from inside a signed-in desktop-app
+session. There is no way to pre-verify them headlessly.
+
+### The auto-update broke the app — verify before telling any client
+
+Within a minute of first launch the app auto-updated 0.14.10 → 1.26832.0, and **the updated build
+would not start at all**:
+
+| build | PE arch | launch result |
+|---|---|---|
+| `app-0.14.10` (shipped in the installer) | ARM64 | starts, window title "Claude" |
+| `app-1.26832.0` (auto-update) | ARM64 | **exits instantly, `0x80000003` STATUS_BREAKPOINT** |
+
+Squirrel's launcher stub always runs the newest version, so every click on the shortcut hit the
+crashing build and nothing opened — with no error dialog. Symptom for a client would be "I
+installed Claude and it just doesn't open."
+
+It is not an architecture mismatch: I checked the PE machine type and both builds are genuinely
+ARM64. (The `arch=amd64` in Squirrel's RELEASES query string is cosmetic — it pulled from the
+`win32/arm64` feed.)
+
+**Do not treat this as a confirmed client-blocking bug yet.** It reproduces reliably in this VM,
+but the VM has no real GPU (virtio-ramfb under QEMU), and an instant STATUS_BREAKPOINT in a newer
+Electron is exactly the shape of a graphics/ANGLE initialization failure. It needs one launch on
+real ARM64 hardware (a Snapdragon X / Surface-class machine) before it means anything about
+clients. If it *does* reproduce there, it blocks Path B on ARM64 at step 2 and Nick needs to know
+before the next onboarding call.
+
+Workaround applied in the VM so it stays usable:
+
+- renamed the broken `app-1.26832.0` to `BROKEN-app-1.26832.0`
+- repointed the Desktop and Start Menu shortcuts straight at `app-0.14.10\claude.exe`
+- renamed `Update.exe` → `Update.exe.disabled`, which stops Squirrel re-applying it
+  (log then reads `App is not installed, not enabling auto-updates`)
+
+All three are reversible. Note the Start Menu shortcut lives under an **Anthropic** subfolder,
+not at the top level.
+
 ## Not covered
 
-Signing Claude Code into a paid account needs Nick's own credential, so these remain untested:
+Signing Claude into a paid account needs Nick's own credential, so these remain untested:
 
 - the `/day-one` chat flow itself
 - `/shadowdesk:key <code>` end to end with a real minted key
 - `/shadowdesk:doctor` reaching all-green
+- **Path B specifically**: `CLAUDE_CODE_EXECPATH` resolution inside a live desktop-app session,
+  and the extra `gh` install Path B calls for (the `ABCD-1234` pairing-code backup flow)
 
-The VM is one sign-in away from all three. Everything mechanical underneath them is verified.
+The VM is one sign-in away from all of these. Everything mechanical underneath them is verified,
+on both surfaces.
 
 ## Reusing the VM
 
