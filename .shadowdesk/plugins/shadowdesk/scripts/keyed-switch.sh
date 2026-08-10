@@ -32,7 +32,7 @@ KEY_API="${SHADOWDESK_KEY_API:-https://shadowdesk.ai/api/key}"
 # ?v=2 pins THIS generation of the script. The endpoint keeps serving older generations their own
 # hash, so shipping a new one never bricks a client still holding the previous copy. Bump the v
 # whenever this file changes. The harness overrides the whole URL, so it never sees the param.
-HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash?v=3}"
+HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash?v=4}"
 
 SELF="${BASH_SOURCE[0]}"
 say()  { printf '%s\n' "$*"; }
@@ -150,7 +150,13 @@ verify_auth() {
 
 # ---- 5. FLIP the marketplace: add + install BEFORE remove (never zero-marketplace) ----
 flip_marketplace() {
-  claude plugin marketplace add "$MKT_REPO" \
+  # Pass the EXPLICIT HTTPS url, never the `owner/repo` shorthand. Given the shorthand, the CLI
+  # decides SSH-vs-HTTPS itself at runtime: on a machine with a usable GitHub SSH key it clones
+  # git@github.com:… , which ignores the token we just stored and scoped, and fails on a private
+  # repo the client's own SSH key cannot read ("Host key verification failed" / permission denied).
+  # That is the failure that killed a real client install on 08/05. The full url is unambiguous,
+  # so the clone always goes over HTTPS and always presents our credential.
+  claude plugin marketplace add "$MKT_CRED_URL" \
     && claude plugin install shadowdesk@shadowdesk \
     || die "the keyed marketplace add/install did not complete. Your free starter is still installed, so nothing is broken — just run /shadowdesk:key again."
 
