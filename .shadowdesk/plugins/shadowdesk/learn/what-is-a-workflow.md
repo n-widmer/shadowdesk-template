@@ -20,7 +20,7 @@ You also settle up front what a step should do when it comes back empty, instead
 
 ## What this looks like in your setup
 
-Take a new lead. `/shadowdesk:email` drafts your reply in your voice, read from the profile `/capture-voice` writes into `onboarding/`. I can log the lead under `clients/`. Looking them up and setting a follow up need a connected tool. `CONNECTIONS.md` lists what you have hooked up. `/shadowdesk:skill-builder` strings those steps into one run.
+Take a new lead. `/shadowdesk:email` drafts your reply. Once you have run `/capture-voice`, it writes in your voice, from the profile that lands in `onboarding/`. I can log the lead under `clients/`. Looking them up and setting a follow up need a connected tool. `CONNECTIONS.md` lists what you have hooked up. `/shadowdesk:skill-builder` strings those steps into one run.
 
 ## Try this
 

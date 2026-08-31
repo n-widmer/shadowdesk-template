@@ -5,3 +5,7 @@ node_modules/
 .DS_Store
 __pycache__/
 *.pyc
+
+# The backup kill switch is per-machine. Committing one would silently disable
+# every client's auto-backup on their next pull.
+.no-autobackup
