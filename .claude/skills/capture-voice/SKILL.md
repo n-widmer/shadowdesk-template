@@ -103,7 +103,7 @@ Show the 5-8 anti-pattern candidates as a plain list:
 
 Ask in plain chat: *"All good? Or edit / drop / add any? For example, you might want to add things like 'don't call clients guys' or 'don't use the word leverage' that wouldn't show up in your inbox but you know you want banned."*
 
-Freeform reply — again not `AskUserQuestion`, because the user might add, drop, OR edit. Target a final count of **8-12** anti-patterns (research-backed range — see [`/decisions/2026-05-24-capture-voice-spec.md`](../../../decisions/2026-05-24-capture-voice-spec.md) § 2.3).
+Freeform reply — again not `AskUserQuestion`, because the user might add, drop, OR edit. Target a final count of **8-12** anti-patterns (research-backed range).
 
 ### 8. Mechanical write — voice-profile.md (~150 line cap, 6 sections in this exact order)
 
@@ -243,4 +243,4 @@ No versioned files. Git history preserves prior profiles for diffing.
 
 **Why:** This is a setup / install tool, not a recurring-value skill. TIME-SAVED tracks recurring per-use time savings; a one-shot voice capture doesn't fit that model. The compounding value of `/capture-voice` surfaces downstream — every draft-related skill the user builds via `/skill-builder` saves ~5 minutes per use (the typical per-email time saved by the AI nailing voice without manual editing). `/skill-builder` should recommend `5` as the `manual_time_minutes` baseline when building draft-related skills that consume this profile.
 
-This exemption is documented in [`/decisions/2026-05-24-capture-voice-spec.md`](../../../decisions/2026-05-24-capture-voice-spec.md) § 2.12. If the exemption needs to apply to other setup tools (e.g. `/install-connector`), formalize as Decision 27 ("Setup tools are exempt from self-ping") via `ADD-ITEM-PROMPT.md` in a follow-up session.
+This exemption is deliberate. If it needs to apply to other setup tools (e.g. `/install-connector`), widen it there too.
