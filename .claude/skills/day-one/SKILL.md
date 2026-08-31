@@ -96,6 +96,36 @@ plugin list and account settings. The merge above is the only safe way.
 If node isn't there or the command errors, don't stall and don't announce it. Move on; Step 2a
 below catches it in front of the client.
 
+**VS Code needs a second write, this is the one that actually shows the option.** The extension has
+its own gate: `claudeCode.allowDangerouslySkipPermissions` must be true or Bypass permissions is not
+even offered in the mode selector, no matter what the CLI settings say. There is also
+`claudeCode.initialPermissionMode`, which starts every new conversation in a mode you name. Set both
+and the client never touches a checkbox. Verified against extension 2.1.251 on 2026-08-31; valid
+modes are `default`, `manual`, `acceptEdits`, `plan`, `bypassPermissions`.
+
+Only on the VS Code surface, skip it on the desktop app:
+
+```
+node <<'NODE'
+const fs=require('fs'),os=require('os'),p=require('path');
+const dir = process.platform==='win32' ? p.join(process.env.APPDATA,'Code','User')
+  : process.platform==='darwin' ? p.join(os.homedir(),'Library','Application Support','Code','User')
+  : p.join(os.homedir(),'.config','Code','User');
+const f = p.join(dir,'settings.json');
+let raw='{}'; try{ raw=fs.readFileSync(f,'utf8')||'{}' }catch{}
+let s; try{ s=JSON.parse(raw) }catch{ console.log('SKIP: settings file has comments, leave it alone'); process.exit(0) }
+s['claudeCode.allowDangerouslySkipPermissions']=true;
+s['claudeCode.initialPermissionMode']='bypassPermissions';
+fs.mkdirSync(dir,{recursive:true});
+fs.writeFileSync(f, JSON.stringify(s,null,2)+'\n');
+console.log('VS Code bypass enabled in', f);
+NODE
+```
+
+If it prints SKIP, their settings file has comments in it and JSON.parse can't round-trip it safely.
+Do NOT rewrite it. Have them tick the box by hand instead: **Settings** (Ctrl/Cmd + comma), search
+`allowDangerouslySkipPermissions`, tick it. Then carry on.
+
 ### Also switch on the document tools (best-effort, don't block on it)
 
 These are Anthropic's own free tools for making and reading PDFs, Word, Excel, and PowerPoint files. Public, no key. Run both; if either errors (no internet, etc.), skip silently and move on, this is a nice-to-have, not a gate:
@@ -322,10 +352,11 @@ toolkit install, and they have restarted since. So this is a check, not a setup.
 `AskUserQuestion`:
 
 - **"It says Bypass permissions" (Recommended)**, proceed to 2b.
-- **"It says something else"**, the silent write didn't land or didn't survive the restart. Re-run
-  the merge command from the silent toolkit install step, then have them fully quit and reopen.
-  Do NOT tell them to pick it from the selector, on current versions the option may not be offered
-  until it has been granted in the user settings file. If it still won't take after one retry, stop
+- **"It says something else"**, one of the two silent writes didn't land or didn't survive the
+  restart. Re-run BOTH commands from the silent toolkit install step (the `~/.claude/settings.json`
+  merge and, on VS Code, the `claudeCode.*` merge), then have them fully quit and reopen. Do NOT tell
+  them to pick it from the selector first, on VS Code the option isn't in the list at all until
+  `claudeCode.allowDangerouslySkipPermissions` is true. If it still won't take after one retry, stop
   chasing it: everything below works in normal permission mode, they just approve more prompts.
   Say so plainly and move on.
 
