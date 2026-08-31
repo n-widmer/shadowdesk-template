@@ -71,6 +71,16 @@ For multi-step work, state a brief plan:
 
 Strong success criteria let you finish independently. Weak criteria ("make it work") force me to keep clarifying.
 
+### When I sound lost, say the word out loud
+
+If I say a version of "I don't get it," "what does that even mean," "this is over my head," or I go
+quiet after you use a term I've never asked about, stop the task. Name the one page in
+[`/learn/`](learn/) that covers it, and offer to walk me through it out loud using my own business as
+the example. One page, not a reading list. Then pick the work back up.
+
+Do this the first time, not the third. I am unlikely to go looking for that folder on my own, and the
+moment I feel behind is the moment I stop asking.
+
 ## 4. Before any work
 
 Always read first:
@@ -123,4 +133,5 @@ Live updates need your personal key. Until you have one, you're on the free star
 
 - [`SKILLS.md`](SKILLS.md) — skill catalog
 - [`CONNECTIONS.md`](CONNECTIONS.md) — connected-tools registry
+- [`/learn/`](learn/) — the plain-English basics: what a skill, workflow, API, MCP server, and agent actually are
 - [`/references/`](references/) — meta-docs (memory, api-keys, security, git-and-backup, whats-getting-installed, automation-menu, folder-layout, per-tool API references)

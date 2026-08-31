@@ -24,6 +24,10 @@ Files `/day-one` creates when you first set up your ShadowDesk OS: your scraped 
 
 An append-only log of decisions you've made about how this ShadowDesk OS should work. `/skill-builder` writes here when you make a non-obvious choice (a routing rule, a tradeoff, a "we tried X instead of Y because…"). Old entries stay put. Date-stamped.
 
+### `learn/`
+
+The plain-English basics of how your setup actually works: what a skill is, what a workflow is, what an API and an MCP server are, what an agent is, how Claude remembers you, and how to ask for things well. Read when something stops making sense. You don't have to read it in order or read it all.
+
 ### `references/`
 
 Meta-docs about how your ShadowDesk OS works. This file lives here. So do [`memory.md`](memory.md), [`api-keys.md`](api-keys.md), [`security.md`](security.md), [`git-and-backup.md`](git-and-backup.md), [`automation-menu.md`](automation-menu.md), and one file per tool you connect (`hubspot-api.md`, `stripe-api.md`, etc., added as you connect them).
