@@ -3,7 +3,7 @@
 created: 07/07/26 - 20:05 EDT
 updated: 08/05/26 - 14:19 EDT
 
-Implements `ShadowDesk/KEYED-ONBOARDING-REDESIGN.md` (3-agent brainstorm output). This file
+Implements `ShadowDesk/runbooks/KEYED-ONBOARDING-REDESIGN.md` (3-agent brainstorm output). This file
 records the decisions the build locked, INCLUDING two facts the brainstorm couldn't know that
 changed the trust design. Do not re-litigate without re-reading both.
 
@@ -11,7 +11,7 @@ changed the trust design. Do not re-litigate without re-reading both.
 The old keyed switch-on was 5 raw shell commands pasted into the client's Claude chat. The
 client's own Claude refused it as credential-theft (undocumented, plaintext token to disk,
 `git config --global --replace-all` stomp, unknown marketplace). Correct refusal. See
-`ShadowDesk/KEYED-CLIENT-ONBOARDING.md` (old) for what we are replacing.
+`ShadowDesk/runbooks/KEYED-CLIENT-ONBOARDING.md` (old) for what we are replacing.
 
 ## Two grounding facts that reshaped the trust anchor
 1. **day-one repoints `origin`** to the client's own private backup repo (the "turn on the
@@ -195,18 +195,18 @@ arm64-native and lists `Windows11_arm64`, and the Win11 ARM64 ISO boots far enou
 loads `bootaa64.efi` — but only after repacking the installer onto a FAT32 disk, because that EFI
 reads FAT and not the ISO's UDF. It then hangs: `AHCI#0: Reset the HBA` three times and a frozen
 console. VirtualBox's ARM build runs Linux guests fine (Kali) but cannot boot a Windows guest.
-Harness: `ShadowDesk/verify-keyed-windows-ci.yml` — re-run it on any keyed-switch change.
+Harness: `ShadowDesk/keyed-ops/verify-keyed-windows-ci.yml` — re-run it on any keyed-switch change.
 
 ### Verification that now gates this flow
-- `ShadowDesk/rehearse-keyed-v2.sh` — clean-cred, mocked pin. **Check 5 added**, covering the
+- `ShadowDesk/keyed-ops/rehearse-keyed-v2.sh` — clean-cred, mocked pin. **Check 5 added**, covering the
   global url-scope that `marketplace add` actually uses. Fails on the old script, passes on the new.
-- `ShadowDesk/verify-keyed-competing-cred.sh` — **new.** Runs against PRODUCTION shadowdesk.ai with
+- `ShadowDesk/keyed-ops/verify-keyed-competing-cred.sh` — **new.** Runs against PRODUCTION shadowdesk.ai with
   `GIT_CONFIG_NOSYSTEM` deliberately NOT set, so the Xcode CLT system `credential.helper =
   osxkeychain` is live, plus a planted client github.com credential. This is the machine state the
   clean-cred rehearsal could never produce.
-- `ShadowDesk/verify-keyed-real-token.sh` — **new.** Real minted PAT, real private repo, real
+- `ShadowDesk/keyed-ops/verify-keyed-real-token.sh` — **new.** Real minted PAT, real private repo, real
   network. Closes the 07/07 ship-gate.
-- `ShadowDesk/verify-keyed-selfheal.sh` — **new.** Fake helper that stores but never resolves;
+- `ShadowDesk/keyed-ops/verify-keyed-selfheal.sh` — **new.** Fake helper that stores but never resolves;
   proves the runtime heal path.
 
 Run **all four** before shipping any keyed-switch change. They live under `ShadowDesk/` (gitignored,

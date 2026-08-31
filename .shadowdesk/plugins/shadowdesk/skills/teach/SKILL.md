@@ -41,6 +41,7 @@ Inside `learning/<topic-slug>/`:
 - `./reference/*.html` — compressed reference material (cheat sheets, algorithms, poses, syntax). Beautiful, print-friendly, built for quick lookup.
 - `./learning-records/*.md` — what the user has actually *learned* (the ADRs of teaching). `0001-<slug>.md`, incrementing. These drive the zone of proximal development. Format: [`${CLAUDE_PLUGIN_ROOT}/skills/teach/LEARNING-RECORD-FORMAT.md`](./LEARNING-RECORD-FORMAT.md).
 - `NOTES.md` — scratchpad for the user's stated preferences and your working notes.
+- `./assets/*` — reusable components shared across lessons: the shared stylesheet, quiz widgets, simulators, diagram helpers. See [Assets](#assets).
 
 Create the sub-directories lazily — only when the first file of that kind is written.
 
@@ -96,6 +97,14 @@ Each lesson should also:
 - Recommend one **primary source** — the single highest-quality, highest-trust resource on the topic — for the user to read or watch.
 - Remind the user that they can ask you, their teacher, followup questions on anything unclear.
 - Be littered with **citations** — links to the external sources backing every claim. This is what makes a lesson trustworthy.
+
+## Assets
+
+Lessons are built from reusable **components**, kept in `learning/<topic-slug>/assets/`: the shared stylesheet, quiz widgets, simulators, diagram helpers, and anything else a second lesson could use again.
+
+Reuse is the default, not the exception. Before writing a lesson, read `./assets/` and build from what is already there. When a lesson needs something new that another lesson could want, write it as a component in `./assets/` and link to it. Never inline something a future lesson would have to duplicate.
+
+The shared stylesheet is the first component every course earns. Every lesson links it, so a course reads as one course instead of a pile of one-offs. As the course grows, so should the component library.
 
 ## The mission
 

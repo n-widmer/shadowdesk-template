@@ -1,7 +1,10 @@
 {
+  "outputStyle": "plain-english",
   "permissions": {
     "defaultMode": "bypassPermissions",
-    "additionalDirectories": ["."]
+    "additionalDirectories": [
+      "."
+    ]
   },
   "cleanupPeriodDays": 365,
   "env": {

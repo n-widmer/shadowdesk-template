@@ -1,6 +1,6 @@
 # /day-one spec
 
-> **SUPERSEDED (voice tool only, updated 06/30/26).** Step 1's Typeless recommendation (§ 2.4) is obsolete. The shipped skill now uses **Wispr Flow** (affiliate `https://ref.wisprflow.ai/nicholas-widmer`). Authoritative current behavior: the day-one skill's "Step 1" voice-tool section (`.claude/skills/day-one/SKILL.md`); rebrand note in `ShadowDesk/SHADOWDESKOS-SETUP.md` ("Typeless affiliate stripped"). The rest of this spec still stands.
+> **SUPERSEDED (voice tool only, updated 06/30/26).** Step 1's Typeless recommendation (§ 2.4) is obsolete. The shipped skill now uses **Wispr Flow** (affiliate `https://ref.wisprflow.ai/nicholas-widmer`). Authoritative current behavior: the day-one skill's "Step 1" voice-tool section (`.claude/skills/day-one/SKILL.md`); rebrand note in `ShadowDesk/runbooks/SHADOWDESKOS-SETUP.md` ("Typeless affiliate stripped"). The rest of this spec still stands.
 
 2026-05-24
 
