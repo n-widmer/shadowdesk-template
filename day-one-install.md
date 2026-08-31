@@ -54,7 +54,7 @@ That is Section A. VS Code, Claude, a paid Claude plan, and a free GitHub accoun
 
 You do not prepare anything for this part. I walk you through it live. Here is the whole shape so nothing feels like a surprise.
 
-**1. Install two small tools, together.** First thing on the call, I have you install **Git** and **Node**, the two engines your setup runs on. They are quick, a couple of minutes each, and I talk you through every click. We do these live so you do not have to wrestle with them alone.
+**1. Install a few small tools, together.** First thing on the call, I have you install **Git** and **Node**, the two engines your setup runs on, plus **GitHub's own helper tool** that sets up your backup in one step. They are quick, a couple of minutes each, and I talk you through every click. We do these live so you do not have to wrestle with them alone.
 
 **2. Open your personal link.** I send you a private link that is just for you. You open it, enter the passcode I gave you, and it shows you two things to copy.
 

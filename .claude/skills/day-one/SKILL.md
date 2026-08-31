@@ -201,21 +201,45 @@ git commit -m "ShadowDesk OS initial setup"
 ```
 `rm -rf .git` severs the tie to `n-widmer/shadowdesk-template`; the init + commit guarantee a first save exists (publishing with zero commits was half the recurring failure). Confirm with `git log --oneline -1`.
 
-**2. Create the private repo + push.** Two paths, pick by the surface you detected at the start:
+**2. Create the private repo + push (one command, both surfaces).**
 
-**2a — VS Code (the client's one click):**
-> Click the **Source Control** icon on the left bar (the branch icon). Click **Publish to GitHub**. If it asks you to sign in to GitHub, do it (a browser opens, approve it). Choose **"Publish to GitHub private repository"** and name it **shadowdesk**.
+Use GitHub's own `gh` tool on EVERY path, VS Code included. The VS Code **Publish to GitHub** button
+is a fallback now, not the default: it does three separate jobs (create the repo, point the folder at
+it, upload the files), reports success after the first one, and has silently skipped the other two on
+real installs. `gh` does all three in a single command that either works or errors loudly.
 
-Stress **private**, their real business data lives here. No GitHub account yet? The sign-in screen has a free "Create an account" link.
+**2a — Install `gh` if it isn't there.** `gh --version` first, skip the rest if it answers.
 
-**2b — Claude desktop app (you drive it; there is no Publish button and no VS Code sign-in to piggyback on).** Use GitHub's own `gh` tool — it signs the client in through their browser, no password or token ever gets pasted anywhere:
+- **Windows:** run it yourself in Bash, silent, no client involvement: `winget install --id GitHub.cli`
+- **Mac:** *"One small tool from GitHub, 60 seconds."* Send them to **https://cli.github.com**, the big
+  download button gives a `.pkg`, they double-click and click through. (Don't reach for Homebrew, a
+  stock Mac doesn't have it.)
 
-1. `gh --version` → if missing: Mac, send them to **https://cli.github.com**, download the **.pkg**, standard double-click installer. Windows: run `winget install --id GitHub.cli` yourself in Bash. Re-run `gh --version`; if a fresh install still isn't found, do the full quit-and-reopen dance once.
-2. `gh auth status` → if not signed in, run `gh auth login --hostname github.com --git-protocol https --web` **in the background** and watch its output: it prints a short one-time code (like `ABCD-1234`) and opens github.com in their browser. Read the code to the client: *"GitHub wants a short pairing code to connect — it's ABCD-1234. Type it on the page that just opened and click Authorize."* That code is a pairing code, not a password; this keeps the "you'll never paste a secret" promise intact. Wait for the command to finish.
-3. `gh auth setup-git` — wires GitHub sign-in into git itself, so every future auto-backup push just works.
-4. `git remote remove origin 2>/dev/null; gh repo create shadowdesk --private --source=. --remote=origin --push`
+Re-run `gh --version`. If a fresh install still isn't found, do the full quit-and-reopen dance once,
+PATH changes need it.
 
-Then continue to step 3 (verify) exactly as written.
+**2b — Sign them in (a pairing code, never a secret).** `gh auth status` → if not signed in, run
+`gh auth login --hostname github.com --git-protocol https --web` **in the background** and watch its
+output: it prints a short one-time code (like `ABCD-1234`) and opens github.com in their browser.
+Read the code out: *"GitHub wants a short pairing code to connect, it's ABCD-1234. Type it on the page
+that just opened and click Authorize."* That's a pairing code, not a password, so the "you'll never
+paste a secret" promise holds. Wait for the command to finish.
+
+No GitHub account yet? The page they land on has a free "Create an account" link. Do that first, then
+re-run the login.
+
+Then `gh auth setup-git`, which wires GitHub sign-in into git itself so every future auto-backup push
+just works.
+
+**2c — Create and push, one command:**
+```
+git remote remove origin 2>/dev/null; gh repo create shadowdesk --private --source=. --remote=origin --push
+```
+Stress **private** when you mention it, their real business data lives here.
+
+**If `gh` genuinely can't be installed** (locked-down machine, install blocked), fall back to the
+VS Code button: Source Control icon → **Publish to GitHub** → **Publish to GitHub private repository**
+→ name it **shadowdesk**. Then be extra strict about step 3, this is the path that half-fails.
 
 **3. VERIFY FOR REAL, do not skip, do not trust the button (you drive this in Bash).**
 Wait for the client to confirm they clicked through. Then check against GitHub itself, not just a local string:
@@ -226,24 +250,31 @@ git log --oneline -1   # the commit exists (guaranteed by step 1)
 ```
 The load-bearing check is **`git ls-remote origin`**, a clean local `git remote -v` can still be a dead backup. If `git ls-remote origin` errors, or `git remote -v` is empty / still shows `n-widmer`, the publish did NOT take → go to step 4. Only when `git ls-remote origin` succeeds AND origin is the client's own account do you tell them it's backed up.
 
-**4. Repair it yourself if the button flaked (you drive this, this is the actual fix for the recurring bug).**
-Do NOT just re-loop the button. Repair from the terminal:
-- **Fast path if `gh` is already installed + authed** (`gh auth status` succeeds): one command does everything , 
+**4. Repair it yourself if step 2 didn't take (you drive this from the terminal).**
+Never re-loop the VS Code button, that's what produced the bad state in the first place.
+
+- **`gh` is installed and authed** (`gh auth status` succeeds), which is the normal case now that
+  step 2 installs it, one command does everything:
   ```
   git remote remove origin 2>/dev/null; gh repo create shadowdesk --private --source=. --remote=origin --push
   ```
-  (VS Code path: don't install `gh` just for this, a stock Mac has no Homebrew, so it isn't guaranteed — if it's not there, use the next path. Desktop-app path: you already installed and authed `gh` in step 2b, so this fast path IS your repair path.)
-- **No-install path (works everywhere):** guide a 30-second manual repo create , 
-  > Go to **github.com/new**, name it **shadowdesk**, set it to **Private**, click **Create repository**, then paste me the URL it shows you.
-
-  When they paste the URL:
+  If it fails with a name collision, the repo already exists from a half-finished attempt. Don't make
+  a second one, wire the folder to the existing one instead:
   ```
   git remote remove origin 2>/dev/null
-  git remote add origin <THEIR-REPO-URL>
+  git remote add origin https://github.com/<their-account>/shadowdesk.git
   git branch -M main
   git push -u origin main
   ```
-  In VS Code the push authenticates through its built-in GitHub sign-in, no token needed. In the desktop app there is no such sign-in — complete the `gh auth login` + `gh auth setup-git` steps from 2b first, or the push dies asking for a username.
+- **`gh` says the token is invalid or expired:** re-run `gh auth login --hostname github.com
+  --git-protocol https --web` from step 2b, then `gh auth setup-git`, then retry the push. A stale
+  sign-in reads exactly like a broken repo, check this before you go hunting.
+- **`gh` can't be installed at all:** guide a 30-second manual repo create,
+  > Go to **github.com/new**, name it **shadowdesk**, set it to **Private**, click **Create repository**, then paste me the URL it shows you.
+
+  Then the same four lines as above with the URL they pasted. In VS Code the push authenticates
+  through its built-in GitHub sign-in, no token needed. Anywhere else, `gh auth setup-git` from step
+  2b has to be done first or the push dies asking for a username.
 
 Re-run the step-3 checks after any repair. **Loop step 4 until `git ls-remote origin` succeeds. Never proceed to Step 1 on an unverified backup**, a broken backup that looks fine is exactly the failure we're killing.
 
