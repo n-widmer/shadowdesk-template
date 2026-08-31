@@ -10,7 +10,7 @@ Read this when you (or Claude) need to know where something belongs.
 
 ### `clients/`
 
-One subfolder per customer or contact you work with. Each subfolder holds whatever your work with that person needs — notes, drafts, history, attachments. `/skill-builder` may create new client folders as you build customer-specific automations.
+One subfolder per customer or contact you work with. Each subfolder holds whatever your work with that person needs — notes, drafts, history, attachments. `/shadowdesk:skill-builder` may create new client folders as you build customer-specific automations.
 
 ### `projects/`
 
@@ -22,7 +22,7 @@ Files `/day-one` creates when you first set up your ShadowDesk OS: your scraped 
 
 ### `decisions/`
 
-An append-only log of decisions you've made about how this ShadowDesk OS should work. `/skill-builder` writes here when you make a non-obvious choice (a routing rule, a tradeoff, a "we tried X instead of Y because…"). Old entries stay put. Date-stamped.
+An append-only log of decisions you've made about how this ShadowDesk OS should work. `/shadowdesk:skill-builder` writes here when you make a non-obvious choice (a routing rule, a tradeoff, a "we tried X instead of Y because…"). Old entries stay put. Date-stamped.
 
 ### `learn/`
 

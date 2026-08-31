@@ -1,6 +1,6 @@
 ---
 name: day-one
-description: First-touch on-ramp inside this ShadowDesk OS. Three steps, voice tool, harness settings (bypass mode + model picker), and a fast website and LinkedIn scrape, followed by a synthesized identity paragraph and a soft-ask handoff to /skill-builder. Use when the user pastes the kickoff bundle from shadowdesk.ai/levelup, says "set me up", "first time", "I just opened this", "walk me through Day One", or when you spot the SHADOWDESK_BUNDLE marker in their first message. One-shot per client.
+description: First-touch on-ramp inside this ShadowDesk OS. Three steps, voice tool, harness settings (bypass mode + model picker), and a fast website and LinkedIn scrape, followed by a synthesized identity paragraph and a soft-ask handoff to /shadowdesk:skill-builder. Use when the user pastes the kickoff bundle from shadowdesk.ai/levelup, says "set me up", "first time", "I just opened this", "walk me through Day One", or when you spot the SHADOWDESK_BUNDLE marker in their first message. One-shot per client.
 ---
 
 # /day-one
@@ -485,7 +485,7 @@ Display the written paragraph back:
 
 Write the final paragraph to `CLAUDE.md` § 1 Identity, replacing the empty stub. Do **not** touch any other section of CLAUDE.md.
 
-## Handoff to /skill-builder (soft ask)
+## Handoff to /shadowdesk:skill-builder (soft ask)
 
 First, one short line introducing the toolkit, in plain words:
 
@@ -513,7 +513,7 @@ Then `AskUserQuestion`:
 ## Out of scope (v1.0)
 
 - **Re-running /day-one.** One-shot per client. Re-invocation behavior is undefined in v1.0.
-- **Connector setup.** Connectors are lazy-loaded by `/skill-builder` § Connector gap when a skill needs them. /day-one ends with no connectors active.
+- **Connector setup.** Connectors are lazy-loaded by `/shadowdesk:skill-builder` § Connector gap when a skill needs them. /day-one ends with no connectors active.
 - **Voice profile capture.** That's `/capture-voice`'s job (first opt-in update per the "Getting updates" pattern). /day-one does not create `voice-profile.md`.
 - **Autonomous client self-onboarding.** v1.0 assumes a guided session. Autonomous mode is v1.1 backlog.
 - **Connector setup walkthrough.** CONNECTIONS.md § "Recommended for solo experts" is visible to anyone who reads the file, but /day-one doesn't proactively walk through it.
@@ -542,7 +542,7 @@ You (Nick at first, possibly future facilitators) are on Zoom or in-person, scre
 
 ### Pacing rules (during /day-one)
 
-- **30-minute soft cap.** If /day-one runs past 30 min, you've gone too deep, the temptation is to start interviewing, don't. Identity-paragraph depth is /skill-builder's job (when building voice-aware skills), or /capture-voice's job later. Glance, don't dig.
+- **30-minute soft cap.** If /day-one runs past 30 min, you've gone too deep, the temptation is to start interviewing, don't. Identity-paragraph depth is /shadowdesk:skill-builder's job (when building voice-aware skills), or /capture-voice's job later. Glance, don't dig.
 - **Voice tool is the highest-leverage install.** If the client wants to skip, push back gently ONCE then let them skip, the re-prompt mechanism catches it next session.
 - **Apify token comes from the /levelup paste.** Held in session memory only, never stored, and it only scrapes the client's own business profile. If the bundle is missing it, send them back to /levelup. Don't try to teach them what a token is.
 - **Identity paragraph is locked-in context for every future session.** If the bullet reflect or paragraph looks subtly wrong, push for the correction NOW, fixing it later costs more.

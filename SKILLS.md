@@ -20,7 +20,7 @@ Three skills that used to live in this folder now live there: `/shadowdesk:brain
 
 **Status:** `[live]`
 
-**Purpose.** Walks me through Day One of my ShadowDesk OS: voice tool, two settings (bypass mode + model picker), website + LinkedIn scrape, personalized identity paragraph. Ends with a soft-ask handoff to `/skill-builder`. One-shot per client; assumes a guided session.
+**Purpose.** Walks me through Day One of my ShadowDesk OS: voice tool, two settings (bypass mode + model picker), website + LinkedIn scrape, personalized identity paragraph. Ends with a soft-ask handoff to `/shadowdesk:skill-builder`. One-shot per client; assumes a guided session.
 
 **Invoke when I say:**
 - "set me up"
@@ -31,7 +31,7 @@ Three skills that used to live in this folder now live there: `/shadowdesk:brain
 
 ---
 
-## `/skill-builder` — build a new skill for a recurring task
+## `/shadowdesk:skill-builder` — build a new skill for a recurring task
 
 **Status:** `[live]`
 

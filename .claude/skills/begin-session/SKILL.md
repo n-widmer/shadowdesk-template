@@ -52,7 +52,7 @@ Three tiers — stop at the first confident match.
 - Topic resolved to `shadowdesk/projects/<x>/` → **project mode**
 - Resolved to BOTH (multi-token match or shared slug) → **hybrid mode**
 
-Do NOT infer mode from the topic-string shape ("Bob Smith" looks personal; "Q4 Pricing" looks project-y). Folder location is the only signal — `/skill-builder` can move folders later if the client wants a different home.
+Do NOT infer mode from the topic-string shape ("Bob Smith" looks personal; "Q4 Pricing" looks project-y). Folder location is the only signal — `/shadowdesk:skill-builder` can move folders later if the client wants a different home.
 
 ### 3. Fan out — parallel subagents, single message
 
@@ -80,9 +80,9 @@ After the briefing, append AT MOST ONE single-line referral to another skill —
 
 Signals (v1.0 starter skills only):
 
-- **Topic folder is empty or stub** (just-scaffolded or never filled out) → *"Want to run `/skill-builder` to start capturing context for this?"*
-- **Calendar entry within next 7 days** mentioning this person → *"Want help prepping or drafting something for the upcoming meeting?"* (lands on `/skill-builder`)
-- **Unaddressed Gmail thread** (last sender = the contact, > 48 hours stale) → *"Want help drafting a reply?"* (lands on `/skill-builder`)
+- **Topic folder is empty or stub** (just-scaffolded or never filled out) → *"Want to run `/shadowdesk:skill-builder` to start capturing context for this?"*
+- **Calendar entry within next 7 days** mentioning this person → *"Want help prepping or drafting something for the upcoming meeting?"* (lands on `/shadowdesk:skill-builder`)
+- **Unaddressed Gmail thread** (last sender = the contact, > 48 hours stale) → *"Want help drafting a reply?"* (lands on `/shadowdesk:skill-builder`)
 
 Discipline: one max per briefing. Most time-sensitive wins (calendar > Gmail > empty-folder). No signal → no referral. Never recommend a skill that doesn't exist yet.
 

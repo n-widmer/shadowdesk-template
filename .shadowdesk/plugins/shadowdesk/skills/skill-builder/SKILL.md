@@ -3,7 +3,7 @@ name: skill-builder
 description: Build a new skill end-to-end inside your repo, or modify an existing one. Use when the user says "build me a skill", "automate this", "turn this into a skill", "I keep doing X by hand", "I want a skill for Y", "what should I automate next", or pastes a recurring task they want encoded, even if they never say the word "skill". Also use when extending, fixing, or re-triggering an existing skill.
 ---
 
-# /skill-builder
+# /shadowdesk:skill-builder
 *Provided as part of your ShadowDesk engagement. Not for resale or redistribution.*
 
 The compositional engine that grows new skills inside your repo. Routes to the right thinking partner (`/grill-me` if there's a plan, `/brainstorming` if there isn't), locks the spec, enforces prerequisites, generates the SKILL.md, tests it once, and commits.
@@ -240,9 +240,9 @@ When Step 3's overlap check routes to "Extend existing" instead of new build:
 - **Heavyweight benchmarking.** For a quantitative with-skill-vs-baseline benchmark on a high-value skill (graded assertions, mean ± stddev over runs, an HTML viewer, an automated description optimizer), use a dedicated benchmarking workflow. skill-builder deliberately does NOT re-implement that machinery.
 - **Full TDD / pressure-testing for every skill.** The § 10 single pressure check covers the rare guardrail skill; the full loop is parked for most builds.
 - **Periodic revalidation / rot detection.** A skill can silently break when a connector or vendor UI changes underneath it. Catching that is a separate health-check concern, not part of authoring.
-- **Cross-session resume.** If /skill-builder is interrupted mid-build, expect re-invocation from scratch.
+- **Cross-session resume.** If /shadowdesk:skill-builder is interrupted mid-build, expect re-invocation from scratch.
 - **Self-build.** Bootstrap exception: this SKILL.md was authored by hand and should not be rebuilt by itself.
 - **Semantic-embedding overlap detection.** Step 3 is keyword + structural. Embedding-based is a later idea.
 - **Bulk build.** One skill per invocation.
 
-> Note: `/skill-builder` does NOT self-ping. It's a build/meta tool, exempt from TIME-SAVED tracking. The value it creates is tracked downstream, in the self-pings of the time-saver skills it builds.
+> Note: `/shadowdesk:skill-builder` does NOT self-ping. It's a build/meta tool, exempt from TIME-SAVED tracking. The value it creates is tracked downstream, in the self-pings of the time-saver skills it builds.

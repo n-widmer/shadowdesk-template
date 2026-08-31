@@ -1,6 +1,6 @@
 # AIOS append templates
 
-Exact paste text for the two blocks `/skill-builder` bakes into a generated skill (§ 8 of SKILL.md). Substitute `<skill-name>` and `<manual_time_minutes>` from the spec and the manual-time baseline.
+Exact paste text for the two blocks `/shadowdesk:skill-builder` bakes into a generated skill (§ 8 of SKILL.md). Substitute `<skill-name>` and `<manual_time_minutes>` from the spec and the manual-time baseline.
 
 ## Self-ping block (time-saver skills only)
 

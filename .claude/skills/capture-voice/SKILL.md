@@ -1,6 +1,6 @@
 ---
 name: capture-voice
-description: Captures the user's writing voice from their real sent emails and writes a lean voice profile that every future draft-related skill reads before writing as the user. Use when the user pastes "pull /capture-voice from n-widmer/shadowdesk-template main and install it", says "capture my voice", "build voice profile", "refresh my voice", or when `/skill-builder` hits its voice-profile hard gate and tells the user to install this first.
+description: Captures the user's writing voice from their real sent emails and writes a lean voice profile that every future draft-related skill reads before writing as the user. Use when the user pastes "pull /capture-voice from n-widmer/shadowdesk-template main and install it", says "capture my voice", "build voice profile", "refresh my voice", or when `/shadowdesk:skill-builder` hits its voice-profile hard gate and tells the user to install this first.
 ---
 
 # /capture-voice
@@ -133,7 +133,7 @@ Write [`/onboarding/voice-profile.md`](../../../onboarding/voice-profile.md) wit
 **Hard format rules.**
 
 - **No YAML `voice_parameters` block.** Research is clear: LLMs ignore 0-1 sliders in favor of prose + exemplars. Sliders are documentation-only bloat.
-- **No platform overrides** (LinkedIn vs SMS vs cold-email). v1.0 writes ONE merged profile. Multi-platform tuning is `/skill-builder`'s job after the user has 2-3 draft skills in flight.
+- **No platform overrides** (LinkedIn vs SMS vs cold-email). v1.0 writes ONE merged profile. Multi-platform tuning is `/shadowdesk:skill-builder`'s job after the user has 2-3 draft skills in flight.
 - **Soft 150-line cap.** If the file pushes past, trim the signature-words section to top 12 by frequency before anything else.
 
 ### 9. Test step (fixed prompt, 1-5 rating)
@@ -195,7 +195,7 @@ No `--no-verify`. No amends. No bulk `git add .` — stage by path.
 
 After commit:
 
-> "Voice profile is live. Want to build your first email-draft skill now? `/skill-builder` can use this voice profile right away."
+> "Voice profile is live. Want to build your first email-draft skill now? `/shadowdesk:skill-builder` can use this voice profile right away."
 
 If the user says yes, invoke `/shadowdesk:skill-builder` via the Skill tool in the same session.
 
@@ -241,6 +241,6 @@ No versioned files. Git history preserves prior profiles for diffing.
 - **No "Self-ping" section at the bottom of this SKILL.md.** Do not add one.
 - **No row added to [`TIME-SAVED.md`](../../../TIME-SAVED.md)** at install or invocation.
 
-**Why:** This is a setup / install tool, not a recurring-value skill. TIME-SAVED tracks recurring per-use time savings; a one-shot voice capture doesn't fit that model. The compounding value of `/capture-voice` surfaces downstream — every draft-related skill the user builds via `/skill-builder` saves ~5 minutes per use (the typical per-email time saved by the AI nailing voice without manual editing). `/skill-builder` should recommend `5` as the `manual_time_minutes` baseline when building draft-related skills that consume this profile.
+**Why:** This is a setup / install tool, not a recurring-value skill. TIME-SAVED tracks recurring per-use time savings; a one-shot voice capture doesn't fit that model. The compounding value of `/capture-voice` surfaces downstream — every draft-related skill the user builds via `/shadowdesk:skill-builder` saves ~5 minutes per use (the typical per-email time saved by the AI nailing voice without manual editing). `/shadowdesk:skill-builder` should recommend `5` as the `manual_time_minutes` baseline when building draft-related skills that consume this profile.
 
 This exemption is deliberate. If it needs to apply to other setup tools (e.g. `/install-connector`), widen it there too.

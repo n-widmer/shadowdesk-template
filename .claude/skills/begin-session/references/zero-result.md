@@ -23,7 +23,7 @@ Scaffold `shadowdesk/clients/<slug>/` (kebab-case from topic) containing:
   First mention — no context captured yet.
 
   ## Next steps
-  Fill in as you work on this. `/skill-builder` can build automations specific to this topic.
+  Fill in as you work on this. `/shadowdesk:skill-builder` can build automations specific to this topic.
   ```
 
 Then brief from the just-created folder. Identity = topic name. All other sections empty (omitted per anti-fabrication rule).
@@ -42,7 +42,7 @@ Then run resolution from `SKILL.md § 1` against the new input.
 
 ## Why `clients/` by default for the scaffold branch
 
-Topic-shaped names usually refer to people or companies — client-mode. If the user clarifies it's actually a project ("this is a project, not a client"), `/skill-builder` can move the folder later. v1.0 doesn't ask which folder upfront — picks `clients/` and moves on.
+Topic-shaped names usually refer to people or companies — client-mode. If the user clarifies it's actually a project ("this is a project, not a client"), `/shadowdesk:skill-builder` can move the folder later. v1.0 doesn't ask which folder upfront — picks `clients/` and moves on.
 
 ## Self-ping behavior
 
