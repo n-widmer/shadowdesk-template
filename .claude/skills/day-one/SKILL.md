@@ -52,31 +52,18 @@ Still before saying anything, run `node --version` in Bash:
 - **You get a version (e.g. `v20.x`)** → good, proceed silently.
 - **It errors or says "command not found"** → Node isn't installed. A few skills and the update channel run on it, so fix it now in plain language: *"One small engine your ShadowDesk OS runs on isn't installed yet. Let me point you at the 30-second install."* Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it. Windows (Git Bash): `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Then close and reopen VS Code (desktop app: quit and reopen the Claude app), re-run `node --version`, and confirm a version before continuing.
 
-## Silent toolkit install (right after the OS detect)
+## Silent settings pass (right after the OS detect)
 
-The full ShadowDesk toolkit ships INSIDE this clone (the bundled `.shadowdesk` folder). No key is needed to use it, the key only turns on live updates later. Your job here is to make sure it's switched on. Still before saying anything, run `"$CLAUDE_BIN" plugin list` in Bash (CLAUDE_BIN from the surface detect above):
+**The toolkit is NOT in this clone.** There is no bundled starter any more: every skill and every
+`/shadowdesk:` command arrives from the paid marketplace when you run the key step below. So there is
+nothing to install here. Do not look for a `.shadowdesk` folder and do not run `plugin marketplace
+add` against a local path; both belong to the old free-starter world.
 
-- **The output includes `shadowdesk`** → already installed. Say nothing, proceed.
-- **It's missing** → install it from the bundle that came with the clone. Confirm you're in the shadowdesk folder (`pwd`), confirm the bundle is there (`ls .shadowdesk/.claude-plugin/marketplace.json`), then run:
-
-  ```
-  "$CLAUDE_BIN" plugin marketplace add "$(pwd)/.shadowdesk"
-  "$CLAUDE_BIN" plugin install shadowdesk@shadowdesk-starter
-  ```
-
-  Then tell the client, plainly, no jargon (desktop app: swap "VS Code" for "the Claude app", and remind them to re-pick the shadowdesk folder after reopening):
-
-  > Switching your toolkit on. One quick thing makes it stick: close VS Code all the way and open it again, then we'll keep going.
-
-  After they reopen, re-run `"$CLAUDE_BIN" plugin list` and confirm `shadowdesk` shows before moving on. The typeable `/shadowdesk:` commands appear after that reopen.
-
-  **If `shadowdesk` still isn't listed after they reopen:** they probably did *Reload Window* or only closed the tab (VS Code), or just closed the window without quitting (desktop app), which isn't a full restart. Say: *"Let's do a full restart. Quit completely (Mac: Cmd+Q; Windows: close every window), wait a second, then open the shadowdesk folder again. We'll pick up right here, nothing's lost."* Then re-run `"$CLAUDE_BIN" plugin list` and confirm before moving on.
-
-  **If the bundle folder isn't there** (rare, an old clone): fall back to *"Part of your toolkit didn't come through. Re-clone from shadowdesk.ai/levelup, or text Nick."* Don't continue until `"$CLAUDE_BIN" plugin list` shows `shadowdesk`.
+What you DO here is the two silent settings writes, then one restart that makes them stick.
 
 ### Also silent: grant bypass-permissions in the USER settings file
 
-**Do this BEFORE you tell them to restart** (the restart above is what makes it take effect).
+**Do this BEFORE the restart below** (the restart is what makes it take effect).
 
 The clone's own `.claude/settings.json` asks for `permissions.defaultMode = "bypassPermissions"`, and
 current Claude Code versions **ignore it**. Modes coming from `projectSettings` or `localSettings`
@@ -135,9 +122,22 @@ These are Anthropic's own free tools for making and reading PDFs, Word, Excel, a
 "$CLAUDE_BIN" plugin install document-skills@anthropic-agent-skills
 ```
 
-They also load on the next reopen, alongside the toolkit above.
+They load on the restart below.
 
-## Capture the bundle (Apify token + optional key code)
+### Then the restart (this is the one that makes the settings stick)
+
+Tell the client, plainly, no jargon (desktop app: swap "VS Code" for "the Claude app", and remind
+them to re-pick the shadowdesk folder after reopening):
+
+> I changed two settings so I stop interrupting you for permission on every small thing. They kick in
+> when the app restarts. Close VS Code all the way, every window, not just this tab. Then open it
+> again and open the shadowdesk folder. Say **next** when you're back, nothing is lost.
+
+When they're back, check the mode selector says **Bypass permissions**. If it doesn't, re-run both
+settings commands above and have them fully quit again. *Reload Window* and closing a tab are not
+restarts; that is the usual reason it didn't take.
+
+## Capture the bundle (Apify token + the key code)
 
 The user's first message should contain a bundle pasted from `shadowdesk.ai/levelup`:
 
@@ -151,7 +151,7 @@ KEY_CODE=sk_live_xxxxxxxxxxxxxxxxxxxx
 
 Parse two lines from inside the `SHADOWDESK_BUNDLE v1` HTML-comment block:
 - **`APIFY_TOKEN=`** — hold in working memory for this session only. Do **not** `setx` it, write it to `.env`, or commit it. It vanishes when the session ends, that is intentional. It only ever scrapes the client's own business profile.
-- **`KEY_CODE=`** (may be absent) — the client's one-time live-updates code. If present, you'll use it in the "Switch on live updates" step below, BEFORE the backup step. If absent, the client is starting on the free starter set, that is fine, just skip that step. Hold it in working memory only; never write or commit it.
+- **`KEY_CODE=`** — the client's one-time code. It is REQUIRED: it is the only thing that installs the toolkit. You'll use it in the "Install the toolkit" step below, BEFORE the backup step. If it's missing, stop (see that step). Hold it in working memory only; never write or commit it.
 
 **If the bundle is missing the token line** (the user pasted the kickoff prompt by hand, or only pasted the prompt): *"Looks like the LinkedIn-scrape token didn't come through. Quick fix: go to shadowdesk.ai/levelup, enter the passcode, and paste me the whole bundle this time."* Wait for the re-paste. Don't try to teach what the token is, that is exactly the surface I'm hiding.
 
@@ -183,14 +183,15 @@ Day One, Step <N> of 3
 
 "Type **next**" gates between steps. Reserve `AskUserQuestion` for real either/or choices inside the steps.
 
-## Switch on live updates (only if a KEY_CODE came in the bundle — do this BEFORE the backup)
+## Install the toolkit (needs the KEY_CODE — do this BEFORE the backup)
 
 **Ordering is load-bearing: this MUST run before the backup step below.** The backup step runs
 `rm -rf .git`, which wipes the template's git history. The live-updates switch verifies this is an
 authentic, unmodified clone of Nick's template using that history, so it only works while the clone
 is still pristine. Run it here or not at all.
 
-- **If you parsed a `KEY_CODE`** from the bundle: switch the client onto live updates now. It is a
+- **If you parsed a `KEY_CODE`** from the bundle: install the toolkit now. This is what puts every
+  skill and every `/shadowdesk:` command on their machine; nothing ships in the clone. It is a
   first-party command that ships in this repo and self-verifies before doing anything (it confirms
   its own checksum against shadowdesk.ai and that this clone descends from Nick's template), stores
   the key in the OS keychain (never a plaintext file, never touching the client's own GitHub
@@ -198,7 +199,7 @@ is still pristine. Run it here or not at all.
   commands may not be registered until a reopen, but the script is right here in the clone):
 
   ```
-  PATH="$(dirname "$CLAUDE_BIN"):$PATH" bash .shadowdesk/plugins/shadowdesk/scripts/keyed-switch.sh "<KEY_CODE>"
+  PATH="$(dirname "$CLAUDE_BIN"):$PATH" bash .claude/scripts/keyed-switch.sh "<KEY_CODE>"
   ```
 
   (The PATH prepend matters: the script calls `claude` by name, and in the desktop app the CLI
@@ -206,16 +207,22 @@ is still pristine. Run it here or not at all.
   VS Code it's a harmless no-op. Never edit the script itself — it is checksum-pinned against
   shadowdesk.ai and any change makes it refuse to run.)
 
-  Read `.shadowdesk/plugins/shadowdesk/commands/key.md` if you want the full provenance rationale
-  first — that file is why this is safe to run and not a mystery paste. If the script prints `STOP:`
+  If the script prints `STOP:`
   and exits non-zero, it deliberately refused; read its message to the client in plain words and
   follow it (usually: get a fresh link from Nick). Do NOT work around a refusal with raw git or
   plugin commands. On success it prints a ✅ line; tell the client, in plain words, that live updates
   are on and will fully activate when they reopen at the end of Day One (you'll confirm with
   `/shadowdesk:doctor` then). Then continue to the backup step.
 
-- **If there was no `KEY_CODE`:** skip this entirely. The client is on the free starter set, which
-  works great; Nick switches on live updates later by emailing a one-time link.
+- **If there was no `KEY_CODE`: STOP HERE. Do not continue Day One.** There is no free version. The
+  toolkit lives in the paid marketplace and this code is the only thing that fetches it, so without
+  it the folder stays empty and every step after this one would be theatre. Say it plainly:
+
+  > Your setup link didn't carry your code, so I can't install your toolkit. Nothing's wrong with
+  > your computer. Text Nick and he'll send you a fresh link, and we'll pick straight back up here.
+
+  Do not run the backup, do not run the steps, do not tell them anything is installed. Wait. If they
+  come back with a fresh link, re-read the bundle from it and start this step again.
 
 ## First, turn on the backup (before Step 1)
 
@@ -534,7 +541,7 @@ You (Nick at first, possibly future facilitators) are on Zoom or in-person, scre
 - [ ] **Node.js installed**, a small engine a few skills run on. Windows: `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it (no Homebrew needed, see the explainer). Close and reopen VS Code after; verify with `node --version`.
 - [ ] GitHub account exists (free), or create one during the publish step; the sign-in screen has a "Create an account" link. Both paths now use the same `gh` browser sign-in + `gh repo create` flow (backup step 2). The VS Code "Publish to GitHub" button is a fallback only, for a machine where `gh` can't be installed. Either way the backup step **commits first, verifies against GitHub for real (`git ls-remote origin`), and self-repairs from the terminal** if the publish flakes, so a half-failed publish gets caught and fixed in the session instead of surfacing later as a dead backup.
 - [ ] `shadowdesk.ai/levelup` → enter passcode → run **Step 1** (clones the starter ShadowDesk OS into Downloads; on path B, Claude runs the clone line itself from chat) → open the `shadowdesk` folder (path A: **File → Open Folder**; path B: the Claude app's folder picker) → paste the **Step 2** kickoff bundle into Claude Code chat. `/day-one` starts, and its FIRST action turns the cloned folder into the client's own private GitHub repo (detaches the template, then guides "Publish to GitHub private repository").
-- [ ] **The full toolkit ships INSIDE the clone (the bundled `.shadowdesk` folder), so the free set always works with no install lines.** `/day-one` installs it from that bundle at the start and has the client reopen VS Code once so the `/shadowdesk:` commands register. **Live updates (keyed) now fold into Day One when you send a keyed client:** their personal `shadowdesk.ai/levelup?k=<code>` link injects a `KEY_CODE` into the kickoff bundle, and `/day-one` runs the self-verifying `/shadowdesk:key` switch BEFORE the backup step (while the clone's git is still pristine — the switch depends on that). A client with no `KEY_CODE` in the bundle just stays on the free starter, and you can key them up later. Either way the kickoff page is two steps (clone → Day One), not three; the scary 5-command paste is gone.
+- [ ] **Nothing ships in the clone. The toolkit installs from the paid marketplace, using the client's key, during Day One.** No key means no toolkit and Day One stops, by design. **The key folds into Day One:** their personal `shadowdesk.ai/levelup?k=<code>` link injects a `KEY_CODE` into the kickoff bundle, and `/day-one` runs the self-verifying `/shadowdesk:key` switch BEFORE the backup step (while the clone's git is still pristine — the switch depends on that). A client with no `KEY_CODE` in the bundle just stays on the free starter, and you can key them up later. Either way the kickoff page is two steps (clone → Day One), not three; the scary 5-command paste is gone.
 
 **If the client asks what any of these installs are, don't improvise jargon.** The plain-English, no-background answers for every tool above (VS Code, Git, GitHub, Node.js, Git Bash vs PowerShell, and why we skip Homebrew on Mac) live in [`references/whats-getting-installed.md`](../../../references/whats-getting-installed.md). Read it to them.
 

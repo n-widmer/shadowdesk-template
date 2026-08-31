@@ -14,7 +14,7 @@ You stop re-explaining. Once "how I chase an unpaid invoice" is written down, yo
 
 ## What this looks like in your setup
 
-Nick wrote the ones that came with your folder. `/shadowdesk:email` drafts an email in your voice. `/shadowdesk:teach` explains something to you. `SKILLS.md` is your own catalog of them. They are instructions, not code: the email one is a file at `.shadowdesk/plugins/shadowdesk/skills/email/SKILL.md`, and you can open it and read every step. To make a new one, `/shadowdesk:skill-builder` turns something you already do by hand each week into a skill. For ideas, read `references/automation-menu.md`.
+Nick wrote the ones that came with your folder. `/shadowdesk:email` drafts an email in your voice. `/shadowdesk:teach` explains something to you. `SKILLS.md` is your own catalog of them. They are instructions, not code. Ask me to show you the steps inside one and you will see plain sentences. To make a new one, `/shadowdesk:skill-builder` turns something you already do by hand each week into a skill. For ideas, read `references/automation-menu.md`.
 
 ## Try this
 

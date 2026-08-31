@@ -10,7 +10,7 @@ Status legend: `[live]` = built and ready. `[not yet built]` = placeholder; the 
 
 ## The ShadowDesk plugin
 
-The full skill library came bundled with your ShadowDesk OS and switched on during Day One. It lives under `/shadowdesk:` commands. Type `/shadowdesk:` in chat to see them all. Two to know first: `/shadowdesk:adapt <skill>` wires a skill to my tools, and `/shadowdesk:update` pulls Nick's latest improvements (that one needs your personal key; until you have it, you're on the free starter set).
+The full skill library installed during Day One, from your personal setup link. It lives under `/shadowdesk:` commands. Type `/shadowdesk:` in chat to see them all. Two to know first: `/shadowdesk:adapt <skill>` wires a skill to my tools, and `/shadowdesk:update` pulls Nick's latest improvements.
 
 Three skills that used to live in this folder now live there: `/shadowdesk:brainstorming`, `/shadowdesk:grill-me`, and `/shadowdesk:end-session`.
 
