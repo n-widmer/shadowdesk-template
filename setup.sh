@@ -33,15 +33,49 @@ case "$AGENT" in ""|claude|codex) ;; *) die "--agent must be claude or codex" ;;
 HOMEDIR="${USERPROFILE:+$(cygpath "$USERPROFILE" 2>/dev/null || printf '%s' "${USERPROFILE//\\//}")}"
 HOMEDIR="${HOMEDIR:-$HOME}"
 
-# --- what is installed (best effort: a folder, an editor extension, an app, or a command) -------------
-has_claude=""; has_codex=""
-{ [ -d "$HOMEDIR/.claude" ] || command -v claude >/dev/null 2>&1 \
-  || ls -d "$HOMEDIR"/.vscode/extensions/anthropic.claude-code-* >/dev/null 2>&1 \
-  || [ -d "${SHADOWDESK_APPS_DIR:-/Applications}/Claude.app" ] || [ -d "${LOCALAPPDATA:-/nonexistent}/AnthropicClaude" ]; } && has_claude=1
-{ [ -d "$HOMEDIR/.codex" ] || command -v codex >/dev/null 2>&1 \
-  || ls -d "$HOMEDIR"/.vscode/extensions/openai.chatgpt-* >/dev/null 2>&1; } && has_codex=1
+# --- what is installed: any trace at all, and say which ones ---------------------------------------------
+# An agent counts as installed if ANY of these exist. Each hit is reported, so on a call you can see why.
+shopt -s nullglob
+L="${LOCALAPPDATA:-/nonexistent}"; R="${APPDATA:-/nonexistent}"; A="${SHADOWDESK_APPS_DIR:-/Applications}"
+[ -n "${LOCALAPPDATA:-}" ] && command -v cygpath >/dev/null 2>&1 && L="$(cygpath "$LOCALAPPDATA")"
+[ -n "${APPDATA:-}" ] && command -v cygpath >/dev/null 2>&1 && R="$(cygpath "$APPDATA")"
+any() { local p; for p in "$@"; do [ -e "$p" ] && return 0; done; return 1; }
+EDITORS=(.vscode .vscode-insiders .vscode-oss .cursor .windsurf)
+ext() { local d out=(); for d in "${EDITORS[@]}"; do out+=("$HOMEDIR/$d/extensions/$1"*); done; any ${out[@]+"${out[@]}"}; }
+NPM_ROOT="$(npm root -g 2>/dev/null || true)"
+claude_seen=""; codex_seen=""
+c() { claude_seen="${claude_seen:+$claude_seen, }$1"; }
+x() { codex_seen="${codex_seen:+$codex_seen, }$1"; }
+
+[ -n "${CLAUDECODE:-}${CLAUDE_CODE_ENTRYPOINT:-}" ]                && c "running now"
+command -v claude >/dev/null 2>&1                                  && c "claude command"
+any "$HOMEDIR/.claude" "$HOMEDIR/.claude.json"                     && c "Claude Code settings"
+any "$HOMEDIR/.local/bin/claude"* "$HOMEDIR/.claude/local" \
+    /opt/homebrew/Caskroom/claude-code /usr/local/Caskroom/claude-code \
+    ${NPM_ROOT:+"$NPM_ROOT/@anthropic-ai/claude-code"}              && c "Claude Code install"
+ext anthropic.claude-code-                                         && c "editor extension"
+any "$A/Claude.app" "$HOMEDIR/Applications/Claude.app" "$HOMEDIR/Library/Application Support/Claude" \
+    "$L/AnthropicClaude" "$R/Claude" "$L/Packages/Claude_"* "$L/Microsoft/WindowsApps/Claude.exe" \
+    "$HOMEDIR/.config/Claude"                                      && c "Claude desktop app"
+any "$HOMEDIR/Library/Application Support/JetBrains/"*/plugins/claude-code* \
+    "$R/JetBrains/"*/plugins/claude-code*                          && c "JetBrains plugin"
+
+[ -n "${CODEX_THREAD_ID:-}${CODEX_SESSION_ID:-}${CODEX_VERSION:-}" ] && x "running now"
+command -v codex >/dev/null 2>&1                                   && x "codex command"
+any "$HOMEDIR/.codex" ${CODEX_HOME:+"$CODEX_HOME"}                 && x "Codex settings"
+any /opt/homebrew/Caskroom/codex /usr/local/Caskroom/codex \
+    ${NPM_ROOT:+"$NPM_ROOT/@openai/codex"}                          && x "Codex install"
+ext openai.chatgpt-                                                && x "editor extension"
+any "$A/ChatGPT.app" "$A/Codex.app" "$HOMEDIR/Applications/ChatGPT.app" "$HOMEDIR/Applications/Codex.app" \
+    "$HOMEDIR/Library/Application Support/com.openai.chat" "$HOMEDIR/Library/Application Support/com.openai.codex" \
+    "$L/OpenAI" "$L/Packages/"*OpenAI* "$L/Packages/"*ChatGPT* "$L/Microsoft/WindowsApps/ChatGPT.exe" \
+                                                                   && x "ChatGPT/Codex desktop app"
+shopt -u nullglob
+
+has_claude="$claude_seen"; has_codex="$codex_seen"
+echo "Claude: ${claude_seen:-not found}"
+echo "Codex:  ${codex_seen:-not found}"
 yn() { [ -n "$1" ] && echo yes || echo no; }
-echo "installed: Claude $(yn "$has_claude"), Codex $(yn "$has_codex")"
 
 # --- which one ---------------------------------------------------------------------------------------
 if [ -z "$AGENT" ]; then
