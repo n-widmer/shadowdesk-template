@@ -16,8 +16,10 @@ without putting code in front of me, do it that way.
 This folder *is* my ShadowDesk OS. It is a tracked folder, so everything we do compounds across
 sessions and (once the GitHub backup is on) across laptops. You are running inside Codex in VS Code.
 
-My toolkit is a set of skills installed at `~/.agents/skills`. Type `$` in the chat to see them, or
-just describe what you need and pick the matching one up on your own.
+My toolkit is a set of skills in `.agents/skills` inside this folder, so they load whenever I work
+here and they are backed up with everything else. Type `$` in the chat to see them, or just describe
+what I need and pick the matching one up on your own. Browser work (logging into sites, clicking
+around, screenshots) goes through the Playwright tool.
 
 ## 3. How to work with me
 

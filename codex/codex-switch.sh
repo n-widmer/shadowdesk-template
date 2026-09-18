@@ -11,8 +11,10 @@
 # run and never touches disk or a credential helper. That sidesteps the whole credential
 # collision class that cost days on the Claude path.
 #
-#   bash codex-switch.sh <code>   first install, saves the code
-#   bash codex-switch.sh          update, reuses the saved code
+#   bash codex-switch.sh <code>          first install, saves the code
+#   bash codex-switch.sh                 update, reuses the saved code
+#   bash codex-switch.sh --here [code]   install into ./.agents/skills (this project) instead of
+#                                        ~/.agents/skills, and keep updating there from now on
 set -euo pipefail
 
 API="${SHADOWDESK_KEY_API:-https://www.shadowdesk.ai/api/key}"
@@ -32,8 +34,22 @@ base_dir() {
 
 BASE="$(base_dir)"
 TOOLKIT="$BASE/.shadowdesk/toolkit"
-SKILLS="$BASE/.agents/skills"
+GLOBAL_SKILLS="$BASE/.agents/skills"
 KEYFILE="$BASE/.shadowdesk/key"
+TARGETFILE="$BASE/.shadowdesk/skills-dir"
+
+# Where the skills go. --here pins it to this project, and the choice is remembered so a plain
+# update later cannot quietly scatter a second copy into the global folder.
+if [ "${1:-}" = "--here" ]; then
+  shift
+  SKILLS="$(pwd)/.agents/skills"
+  mkdir -p "$(dirname "$TARGETFILE")"
+  printf '%s' "$SKILLS" > "$TARGETFILE"
+elif [ -f "$TARGETFILE" ]; then
+  SKILLS="$(cat "$TARGETFILE")"
+else
+  SKILLS="$GLOBAL_SKILLS"
+fi
 
 CODE="${1:-}"
 if [ -z "$CODE" ] && [ -f "$KEYFILE" ]; then CODE="$(cat "$KEYFILE")"; fi
@@ -64,7 +80,7 @@ rm -rf "$TOOLKIT"
 mkdir -p "$TOOLKIT" "$SKILLS"
 cp -R "$SRC/." "$TOOLKIT/"
 
-installed=0
+installed=0; ours=""
 for dir in "$TOOLKIT"/skills/*/; do
   name="$(basename "$dir")"
   rm -rf "${SKILLS:?}/$name"
@@ -73,8 +89,24 @@ for dir in "$TOOLKIT"/skills/*/; do
   find "$SKILLS/$name" -type f -name '*.md' -exec \
     sed -i.bak -e "s|\${CLAUDE_PLUGIN_ROOT}|$TOOLKIT|g" -e "s|\$CLAUDE_PLUGIN_ROOT|$TOOLKIT|g" {} +
   find "$SKILLS/$name" -type f -name '*.bak' -delete
-  installed=$((installed + 1))
+  installed=$((installed + 1)); ours="$ours $name"
 done
+
+# Codex-only extras Nick keeps next to the plugin in the private repo. They are plain skills with
+# no plugin root to rewrite, and they stay behind the same key.
+for dir in "$TMP/mkt/codex-extras/skills"/*/; do
+  [ -f "$dir/SKILL.md" ] || continue
+  name="$(basename "$dir")"
+  rm -rf "${SKILLS:?}/$name"
+  cp -R "$dir" "$SKILLS/$name"
+  installed=$((installed + 1)); ours="$ours $name"
+done
+
+# Installing into a project: clear any global copy of the same skills, or Codex lists each twice
+# (it does not merge skills that share a name).
+if [ "$SKILLS" != "$GLOBAL_SKILLS" ] && [ -d "$GLOBAL_SKILLS" ]; then
+  for name in $ours; do rm -rf "${GLOBAL_SKILLS:?}/$name"; done
+fi
 
 mkdir -p "$(dirname "$KEYFILE")"
 printf '%s' "$CODE" > "$KEYFILE"
