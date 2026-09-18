@@ -1,24 +1,28 @@
 #!/usr/bin/env bash
-# codex-setup — turn a freshly cloned ShadowDesk folder into a CODEX folder.
+# codex-setup — turn a cloned ShadowDesk folder into a CODEX folder.
 #
 # The clone ships for Claude Code: instructions in CLAUDE.md, a .claude/ folder with Claude-only
 # skills, settings and the Claude key script. Codex reads none of it, so leaving it there gives the
 # client a folder full of files their agent ignores, and two competing instruction files.
 #
-# This keeps what ports and removes what cannot:
-#   CLAUDE.md                     -> AGENTS.md (what Codex actually reads)
-#   .claude/skills/begin-session  -> .agents/skills/  (plain Agent Skills, they work as-is)
-#   .claude/skills/capture-voice  -> .agents/skills/
-#   .claude/skills/day-one        -> removed (installs a Claude plugin, sets Claude permission modes)
-#   the rest of .claude/          -> removed (settings, output styles, hooks, keyed-switch.sh)
+#   CLAUDE.md          -> AGENTS.md written (what Codex reads); CLAUDE.md moved to a backup
+#   .claude/skills/*   -> any skill the client made moves to .agents/skills/ (day-one stays behind:
+#                         it installs a Claude plugin). begin-session and capture-voice arrive
+#                         Codex-ready from codex-switch.sh.
+#   .claude/           -> moved to ~/.shadowdesk/claude-backup-<time>/, never deleted
+#   SKILLS.md, CONNECTIONS.md, references/, learn/ -> Claude wording changed to Codex wording
 #
-# Run it from inside the shadowdesk folder, once, before the GitHub backup step:
+# Run it from inside the shadowdesk folder, once, before codex-switch.sh --here:
 #   bash codex/codex-setup.sh
 set -euo pipefail
 
 die() { echo "STOP: $*" >&2; exit 1; }
 
 [ -f SKILLS.md ] && [ -d references ] || die "run this from inside the shadowdesk folder (cd there first)."
+
+BASE="${USERPROFILE:+$(cygpath "$USERPROFILE" 2>/dev/null || printf '%s' "${USERPROFILE//\\//}")}"
+BASE="${BASE:-$HOME}"
+BACKUP="$BASE/.shadowdesk/claude-backup-$(date +%Y%m%d-%H%M%S)"
 
 # AGENTS.md is the whole point: Codex reads it, CLAUDE.md it ignores.
 if [ -f AGENTS.md ]; then
@@ -33,31 +37,47 @@ else
   echo "created: AGENTS.md (downloaded)"
 fi
 
-mkdir -p .agents/skills
-for name in begin-session capture-voice; do
-  if [ -d ".claude/skills/$name" ]; then
-    rm -rf ".agents/skills/$name"
-    cp -R ".claude/skills/$name" ".agents/skills/$name"
-    echo "moved:   $name -> .agents/skills/"
-  fi
+# Skills the client built while on Claude keep working in Codex: same file format.
+mkdir -p .agents/skills memory
+[ -f memory/MEMORY.md ] || printf '# Memory\n' > memory/MEMORY.md
+if [ -d .claude/skills ]; then
+  for dir in .claude/skills/*/; do
+    [ -f "$dir/SKILL.md" ] || continue
+    name="$(basename "$dir")"
+    [ "$name" = "day-one" ] && continue
+    if [ ! -d ".agents/skills/$name" ]; then
+      cp -R "$dir" ".agents/skills/$name"
+      echo "kept:    $name -> .agents/skills/"
+    fi
+  done
+fi
+
+# Move, never delete: anything the client had in .claude/ can be recovered from the backup.
+if [ -d .claude ] || [ -f CLAUDE.md ]; then
+  mkdir -p "$BACKUP"
+  if [ -d .claude ]; then mv .claude "$BACKUP/.claude"; echo "moved:   .claude/ -> $BACKUP"; fi
+  if [ -f CLAUDE.md ]; then mv CLAUDE.md "$BACKUP/CLAUDE.md"; echo "moved:   CLAUDE.md -> $BACKUP"; fi
+fi
+
+# The client's own docs still talk about Claude. Same wording rules the skills get at build time.
+translated=0
+for f in SKILLS.md CONNECTIONS.md README.md $(find references learn -type f -name '*.md' 2>/dev/null); do
+  [ -f "$f" ] || continue
+  before="$(cat "$f")"
+  perl -pi -e '
+    s#`?/shadowdesk:update`?#`bash ~/.shadowdesk/codex-switch.sh`#g;
+    s#`?/shadowdesk:adapt( [a-z<>-]+)?`?#Nick\x27s adapt step (not in Codex yet)#g;
+    s#`/shadowdesk:`#`\$`#g;
+    s#/shadowdesk:([a-z0-9-]+)#\$$1#g;
+    s#\.claude/skills/#.agents/skills/#g;
+    s#CLAUDE\.md#AGENTS.md#g;
+    s#Claude desktop app#ChatGPT desktop app#g;
+    s#Claude Code#Codex#g;
+    s#\bClaude\b#Codex#g;
+  ' "$f"
+  [ "$before" = "$(cat "$f")" ] || translated=$((translated + 1))
 done
-
-if [ -d .claude ]; then
-  rm -rf .claude
-  echo "removed: .claude/ (Claude Code only)"
-fi
-
-if [ -f CLAUDE.md ]; then
-  rm -f CLAUDE.md
-  echo "removed: CLAUDE.md (replaced by AGENTS.md)"
-fi
-
-# SKILLS.md names every skill as /shadowdesk:<name>, which does not exist in Codex.
-if [ -f SKILLS.md ] && ! grep -q 'In Codex, call a skill' SKILLS.md; then
-  printf '> **In Codex, call a skill with `$name`** (for example `$email`), not `/shadowdesk:name`. Or just describe what you need.\n\n%s' "$(cat SKILLS.md)" > SKILLS.md.new
-  mv SKILLS.md.new SKILLS.md
-  echo "noted:   SKILLS.md now says how to call a skill in Codex"
-fi
+echo "updated: $translated doc(s) now say Codex instead of Claude"
 
 echo
-echo "Done. Fill in section 1 of AGENTS.md with who they are, then run the GitHub backup step."
+echo "Done. Next: bash ~/codex-switch.sh --here <code>, then fill in section 1 of AGENTS.md."

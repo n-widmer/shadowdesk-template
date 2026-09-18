@@ -14,7 +14,9 @@ without putting code in front of me, do it that way.
 ## 2. What this folder is
 
 This folder *is* my ShadowDesk OS. It is a tracked folder, so everything we do compounds across
-sessions and (once the GitHub backup is on) across laptops. You are running inside Codex in VS Code.
+sessions and (once the GitHub backup is on) across laptops. You are running inside Codex, in the ChatGPT
+desktop app or the VS Code extension. My memory lives in `memory/` in this folder: read
+`memory/MEMORY.md` when you start, and add to it when you learn something that should last.
 
 My toolkit is a set of skills in `.agents/skills` inside this folder, so they load whenever I work
 here and they are backed up with everything else. Type `$` in the chat to see them, or just describe
