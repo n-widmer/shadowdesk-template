@@ -80,15 +80,39 @@ rm -rf "$TOOLKIT"
 mkdir -p "$TOOLKIT" "$SKILLS"
 cp -R "$SRC/." "$TOOLKIT/"
 
+# The skills are written for Claude Code. Rewrite the mechanical parts so they point at things that
+# exist in Codex: commands become $skill-names, file paths move from .claude/ to .agents/, the
+# instructions file is AGENTS.md. Judgment calls (Claude's question tool, subagents, `claude mcp`)
+# cannot be rewritten by sed, so AGENTS.md carries a translation table for those instead.
+codexify() {
+  find "$1" -type f \( -name '*.md' -o -name '*.json' \) -exec sed -i.bak \
+    -e 's|/shadowdesk:update|bash ~/.shadowdesk/codex-switch.sh|g' \
+    -e 's|/shadowdesk:adapt|adapt (not available in Codex yet)|g' \
+    -e 's|/shadowdesk:\([a-z-]*\)|$\1|g' \
+    -e 's|\.claude/skills/|.agents/skills/|g' \
+    -e 's|\.claude/last-handoff\.md|.agents/last-handoff.md|g' \
+    -e 's|\.claude/last-session\.md|.agents/last-session.md|g' \
+    -e 's|\.claude/\.session-state\.json|.agents/.session-state.json|g' \
+    -e 's|CLAUDE\.md|AGENTS.md|g' {} +
+  find "$1" -type f -name '*.bak' -delete
+}
+
+# Claude-only plumbing with nothing to translate into: install-playwright runs `claude mcp add`
+# (Codex gets Playwright from ~/.codex/config.toml instead), and the adapt demo demonstrates a
+# command Codex does not have. Shipping them would send Codex down a dead end.
+CLAUDE_ONLY="install-playwright example-adapt-demo"
+
 installed=0; ours=""
 for dir in "$TOOLKIT"/skills/*/; do
   name="$(basename "$dir")"
+  case " $CLAUDE_ONLY " in *" $name "*) continue ;; esac
   rm -rf "${SKILLS:?}/$name"
   cp -R "$dir" "$SKILLS/$name"
   # Codex has no plugin root. Point the copies at the payload we just wrote.
   find "$SKILLS/$name" -type f -name '*.md' -exec \
     sed -i.bak -e "s|\${CLAUDE_PLUGIN_ROOT}|$TOOLKIT|g" -e "s|\$CLAUDE_PLUGIN_ROOT|$TOOLKIT|g" {} +
   find "$SKILLS/$name" -type f -name '*.bak' -delete
+  codexify "$SKILLS/$name"
   installed=$((installed + 1)); ours="$ours $name"
 done
 
@@ -102,10 +126,45 @@ for dir in "$TMP/mkt/codex-extras/skills"/*/; do
   installed=$((installed + 1)); ours="$ours $name"
 done
 
+# codex-setup.sh moves these two out of the old .claude/ folder. Translate them too, whichever of
+# the two scripts ran first.
+for name in begin-session capture-voice; do
+  if [ -f "$SKILLS/$name/SKILL.md" ]; then codexify "$SKILLS/$name"; fi
+done
+
+# Remove Claude-only skills an older version of this script installed.
+for name in $CLAUDE_ONLY; do rm -rf "${SKILLS:?}/$name" "${GLOBAL_SKILLS:?}/$name"; done
+
 # Installing into a project: clear any global copy of the same skills, or Codex lists each twice
 # (it does not merge skills that share a name).
 if [ "$SKILLS" != "$GLOBAL_SKILLS" ] && [ -d "$GLOBAL_SKILLS" ]; then
   for name in $ours; do rm -rf "${GLOBAL_SKILLS:?}/$name"; done
+fi
+
+# The judgment-call half of the translation. Added once to the project's AGENTS.md; a client who
+# edited that file keeps their edits, this only appends.
+if [ "$SKILLS" != "$GLOBAL_SKILLS" ] && [ -f "$(dirname "$(dirname "$SKILLS")")/AGENTS.md" ]; then
+  AGENTS_FILE="$(dirname "$(dirname "$SKILLS")")/AGENTS.md"
+  grep -q 'Running skills written for Claude' "$AGENTS_FILE" || cat >> "$AGENTS_FILE" <<'EOF'
+
+## 11. Running skills written for Claude
+
+My skills were first written for Claude Code. When one says something that only exists there, do
+the Codex equivalent instead of stopping:
+
+| The skill says | Do this in Codex |
+|---|---|
+| Ask with `AskUserQuestion` | Ask me in the chat with 2 to 4 numbered options, your recommendation first |
+| Invoke another skill with the Skill tool | Run that skill yourself (`$name`) |
+| Hand work to a subagent / Task tool | Do it yourself, one step at a time |
+| `claude mcp add ...` or `claude plugin ...` | Doesn't apply. Tools live in `~/.codex/config.toml` |
+| `CLAUDE_CODE_EXECPATH` or `$CLAUDE_BIN` | Doesn't apply, skip that line |
+| `~/.claude/projects/.../memory` | Doesn't exist here. Use Codex memories, or a note in this folder |
+| `$key`, `$doctor`, or adapt | Don't exist in Codex. Tell me and move on |
+| WebSearch / WebFetch | Use your own web search and page fetch |
+
+Never create a `.claude/` folder here; Codex ignores it.
+EOF
 fi
 
 mkdir -p "$(dirname "$KEYFILE")"
