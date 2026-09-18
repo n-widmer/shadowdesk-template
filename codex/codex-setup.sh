@@ -59,6 +59,18 @@ if [ -d .claude ] || [ -f CLAUDE.md ]; then
   if [ -f CLAUDE.md ]; then mv CLAUDE.md "$BACKUP/CLAUDE.md"; echo "moved:   CLAUDE.md -> $BACKUP"; fi
 fi
 
+# Codex reads AGENTS.md in each folder from the project root down, never CLAUDE.md. Rename any other
+# CLAUDE.md a skill created (the clients/ rollup, per-client notes). If that folder already has an
+# AGENTS.md, keep it and park the CLAUDE.md in the backup instead of merging two sets of rules.
+find . -name CLAUDE.md -not -path './.git/*' -not -path './.agents/*' 2>/dev/null | while IFS= read -r f; do
+  d="$(dirname "$f")"
+  if [ -f "$d/AGENTS.md" ]; then
+    mkdir -p "$BACKUP/$d" && mv "$f" "$BACKUP/$d/CLAUDE.md" && echo "moved:   $f -> backup ($d/AGENTS.md already existed)"
+  else
+    mv "$f" "$d/AGENTS.md" && echo "renamed: $f -> $d/AGENTS.md"
+  fi
+done
+
 # The client's own docs still talk about Claude. Same wording rules the skills get at build time.
 translated=0
 for f in SKILLS.md CONNECTIONS.md README.md $(find references learn -type f -name '*.md' 2>/dev/null); do

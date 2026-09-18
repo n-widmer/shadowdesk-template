@@ -53,8 +53,10 @@ if [ "${1:-}" = "--here" ]; then
   shift
   # Only ever pin to a ShadowDesk folder. Run from a subfolder or anywhere else, this used to plant a
   # second full copy there and move all future updates to it.
-  if [ ! -f AGENTS.md ] && { [ ! -f SKILLS.md ] || [ ! -d references ]; }; then
-    die "run --here from inside your ShadowDesk folder (the one with AGENTS.md). You are in: $(pwd)"
+  # SKILLS.md + references/ only exist at the root. AGENTS.md alone is not enough: client subfolders
+  # get their own AGENTS.md.
+  if [ ! -f SKILLS.md ] || [ ! -d references ]; then
+    die "run --here from the top of your ShadowDesk folder (the one with SKILLS.md). You are in: $(pwd)"
   fi
   [ "$(pwd -P)" != "$(cd "$BASE" && pwd -P)" ] || die "--here was run from your home folder, not your ShadowDesk folder."
   SKILLS="$(pwd)/.agents/skills"

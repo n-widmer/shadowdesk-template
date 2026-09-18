@@ -9,6 +9,14 @@ The first-touch on-ramp inside this ShadowDesk OS. Three steps, identity paragra
 
 > Guided session: this skill assumes Nick (or a future facilitator) is screen-sharing with the client on Zoom or in-person. See § Notes for whoever is guiding this session at the bottom.
 
+> **Running in OpenAI Codex (the ChatGPT app, or Codex in VS Code), not Claude Code?** This file is
+> the Claude version. Do these three things instead, in Git Bash, from this folder, and don't follow
+> the rest of this file:
+> 1. `bash codex/codex-setup.sh`
+> 2. `bash codex/codex-switch.sh --here <KEY_CODE>`, using the `KEY_CODE=` line from the bundle. It must
+>    print a line starting `OK:`. A line starting `STOP:` means stop and read it to the client.
+> 3. Read `.agents/skills/day-one/SKILL.md` and follow it from the top.
+
 ## Before you start, silent OS + shell detect
 
 Before saying anything, run `uname` in Bash and read the result:
