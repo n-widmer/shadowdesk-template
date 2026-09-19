@@ -9,3 +9,6 @@ __pycache__/
 # The backup kill switch is per-machine. Committing one would silently disable
 # every client's auto-backup on their next pull.
 .no-autobackup
+
+# The coach keeps anything with client names or figures (undo lists, client reports, briefings) here: it stays on this laptop.
+private/

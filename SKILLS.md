@@ -31,6 +31,21 @@ Three skills that used to live in this folder now live there: `/shadowdesk:brain
 
 ---
 
+## `/shadowdesk:coach` — your built-in coach
+
+**Status:** `[live]`
+
+**Purpose.** Finds the next thing worth handing to AI in my business and runs it with me on my real work. Asks what my business does and what's eating my week, suggests three plays (two built from my answers, one from Nick's playbook), explains how the system works along the way in one plain sentence at a time, and keeps my progress in `coach/progress.md`. Also drafts a prep note before a tune-up call with Nick. Drafts only: it never sends anything without my yes.
+
+**Invoke when I say:**
+- "coach me"
+- "what should I do next"
+- "I don't know where to start" / "I don't know what to use this for"
+- "prep my tune-up"
+- or say yes to a "Next up" suggestion
+
+---
+
 ## `/shadowdesk:skill-builder` — build a new skill for a recurring task
 
 **Status:** `[live]`
