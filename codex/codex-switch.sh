@@ -133,14 +133,13 @@ done
 is_ours() { [ -f "$1/$MARK" ] || grep -qs 'ShadowDesk' "$1/SKILL.md"; }
 
 # Skills the previous run installed that the toolkit no longer ships, plus Claude-only leftovers.
-if [ -f "$MANIFEST" ]; then
-  for name in $(cat "$MANIFEST") install-playwright example-adapt-demo; do
-    case " $ours " in *" $name "*) continue ;; esac
-    for where in "$SKILLS" "$PREVIOUS_SKILLS"; do
-      if [ -d "$where/$name" ] && is_ours "$where/$name"; then rm -rf "${where:?}/$name"; fi
-    done
+# No manifest yet means the first version installed here: the Claude-only leftovers still have to go.
+for name in $(cat "$MANIFEST" 2>/dev/null) install-playwright example-adapt-demo; do
+  case " $ours " in *" $name "*) continue ;; esac
+  for where in "$SKILLS" "$PREVIOUS_SKILLS"; do
+    if [ -d "$where/$name" ] && is_ours "$where/$name"; then rm -rf "${where:?}/$name"; fi
   done
-fi
+done
 
 # Moving to a new location (first --here, or a re-pin): clear our copies from the old one, or Codex
 # lists every skill twice. It does not merge skills that share a name.
