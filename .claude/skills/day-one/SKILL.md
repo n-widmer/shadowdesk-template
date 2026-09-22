@@ -340,17 +340,23 @@ without stopping to ask before every small step, the setting took — say so and
 getting stopped for every little action, help them find the permission mode in the app's session
 controls and set it to the most permissive option they're comfortable with, then continue either way.
 
-### 2b, Model picker (default Opus 4.8)
+### 2b, Model picker (default Opus 5.5)
 
-> Up at the top there's a model picker. Pick **Opus 4.8** if you see it, that's the deepest-thinking model, best for real business work.
+> Down in the bottom-left of the chat bar, right next to the plus sign, there's a **Show command menu**
+> button. Click that, then click **Switch model** in the middle of the screen, and pick **Opus 5.5**.
+> That's the deepest-thinking model, best for real business work.
 >
-> If you don't see Opus 4.8 in your list (depends on your plan), pick whatever's at the top, Sonnet works too.
+> If you don't see Opus 5.5 in the list (depends on your plan), pick whatever is at the top; Sonnet
+> works too.
 >
-> If the menu hangs for more than ~10 seconds, don't wait, just close it. You can change models any time by typing `/model`.
+> If the menu hangs for more than ~10 seconds, don't wait, just close it. You can change models any
+> time by typing `/model`.
 
-Wait for any kind of confirm ("done" / "picked it" / "ok"). Don't gate too hard, model picker UI lag is a known v1 trip-up.
+Wait for any kind of confirm ("done" / "picked it" / "ok"). Don't gate too hard, model picker UI lag
+is a known trip-up.
 
-**No Max-plan upsell.** Plan-tier upgrade is a sales conversation, not a setup step. If the client volunteers interest in Opus 4.8 and doesn't have it, that's a guide handoff outside /day-one.
+**No Max-plan upsell.** Plan-tier upgrade is a sales conversation, not a setup step. If the client
+volunteers interest in Opus 5.5 and doesn't have it, that's a guide handoff outside /day-one.
 
 ## Step 3, Business scrape (website + LinkedIn)
 
