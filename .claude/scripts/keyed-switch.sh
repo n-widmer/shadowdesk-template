@@ -32,7 +32,7 @@ KEY_API="${SHADOWDESK_KEY_API:-https://shadowdesk.ai/api/key}"
 # ?v=2 pins THIS generation of the script. The endpoint keeps serving older generations their own
 # hash, so shipping a new one never bricks a client still holding the previous copy. Bump the v
 # whenever this file changes. The harness overrides the whole URL, so it never sees the param.
-HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash?v=4}"
+HASH_API="${SHADOWDESK_HASH_API:-https://shadowdesk.ai/api/key-skill-hash?v=5}"
 
 SELF="${BASH_SOURCE[0]}"
 say()  { printf '%s\n' "$*"; }
@@ -110,6 +110,21 @@ store_token() {
   # exact path, and the clone requests .../shadowdesk-marketplace.git — a scope missing the suffix
   # never matches, so the reset never fires and the client's own helper silently wins the first
   # `marketplace add`. This is exact-path-scoped, so it cannot reach the client's other repos.
+  #
+  # ORDER IS THE WHOLE GAME (v5, 09/22/26). git merges EVERY credential.<url> section that matches
+  # a request, in FILE ORDER, and there is no "more specific url wins" rule. An empty helper value
+  # resets every helper listed before it. `gh auth setup-git` writes exactly such a reset for
+  # https://github.com, which also matches our repo. So if gh's section sits BELOW ours in
+  # ~/.gitconfig, its reset silently wipes our helper and gh offers the client's own GitHub account
+  # for the private marketplace repo. GitHub then answers "Repository not found" (it does not say
+  # "forbidden" for a private repo you cannot see), so the failure looks like a bad key when the key
+  # is perfect. Found on Win11 ARM64 09/22/26; the same hazard exists byte-for-byte on macOS, since
+  # it is config ordering, not a credential store.
+  #
+  # Removing our section first makes `git config --add` append it at the END of the file, below
+  # gh's, so OUR reset is the last one to run and OUR helper is the only one left for this url.
+  # This removes only our own exact-path section; the client's github.com entry is untouched.
+  git config --global --remove-section "credential.${MKT_CRED_URL}" 2>/dev/null || true
   git config --global --replace-all "credential.${MKT_CRED_URL}.helper" ""
   git config --global "credential.${MKT_CRED_URL}.useHttpPath" true
   if [ -n "$helper" ]; then
