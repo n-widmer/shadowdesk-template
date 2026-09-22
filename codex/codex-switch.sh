@@ -117,10 +117,21 @@ fill() {
 }
 fill "$TOOLKIT"
 
+# Skills this client switched off (`disabledSkills` in their config) are not copied, and a copy we
+# installed before is removed. Without this every update brought a switched-off skill back.
+DISABLED=""
+if command -v node >/dev/null 2>&1 && [ -f "$DATA/config.json" ]; then
+  DISABLED="$(node -e 'try{const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));(c.disabledSkills||[]).filter(n=>typeof n==="string"&&/^[A-Za-z0-9._-]+$/.test(n)&&!n.startsWith(".")).forEach(n=>console.log(n))}catch{}' "$(native "$DATA/config.json")" 2>/dev/null | tr -d '\r' | tr '\n' ' ' || true)"
+fi
+
 installed=0; ours=""
 for dir in "$EDITION/skills"/*/ "$TMP/mkt/codex-extras/skills"/*/; do
   [ -f "$dir/SKILL.md" ] || continue
   name="$(basename "$dir")"
+  case " $DISABLED " in *" $name "*)
+    if [ -d "$SKILLS/$name" ] && [ -f "$SKILLS/$name/$MARK" ]; then rm -rf "${SKILLS:?}/$name"; fi
+    continue ;;
+  esac
   rm -rf "${SKILLS:?}/$name"
   cp -R "$dir" "$SKILLS/$name"
   fill "$SKILLS/$name"
@@ -180,6 +191,45 @@ do the Codex equivalent instead of stopping:
 Never create a `.claude/` folder here; Codex ignores it.
 EOF
 fi
+
+# Seed this client's config from the toolkit defaults, once. The Claude plugin does this at every
+# session start (seed-config.mjs); the Codex install never did, so skills that read config found
+# nothing. Only ever fills a MISSING file.
+if [ ! -f "$DATA/config.json" ] && [ -f "$TOOLKIT/defaults/config.json" ]; then
+  cp "$TOOLKIT/defaults/config.json" "$DATA/config.json"
+fi
+
+# Register the startup check with Codex: a SessionStart hook in this folder's .codex/hooks.json
+# (home-folder installs: ~/.codex/hooks.json). It is what makes updates land on their own and
+# switched-off skills stay off, the same as the Claude edition. The command never changes between
+# releases, only the script it runs does, so Codex's one-time approval of the hook keeps holding.
+# Any hook of the client's own in that file is kept; only our entry is replaced.
+if command -v node >/dev/null 2>&1; then
+  if [ "$SKILLS" != "$GLOBAL_SKILLS" ]; then HOOKS_FILE="$(dirname "$(dirname "$SKILLS")")/.codex/hooks.json"; else HOOKS_FILE="$BASE/.codex/hooks.json"; fi
+  mkdir -p "$(dirname "$HOOKS_FILE")"
+  node - "$(native "$HOOKS_FILE")" "$(native "$TOOLKIT/scripts/codex-session-start.mjs")" <<'NODE' || echo "note: could not register the startup check; run \$update later to add it" >&2
+const fs = require("fs"), [file, script] = process.argv.slice(2);
+let j = {}; try { j = JSON.parse(fs.readFileSync(file, "utf8")); } catch {}
+if (!j || typeof j !== "object" || Array.isArray(j)) j = {};
+j.hooks = j.hooks && typeof j.hooks === "object" ? j.hooks : {};
+const ours = (g) => JSON.stringify(g || {}).includes("codex-session-start.mjs");
+const cmd = `node "${script}"`;
+j.hooks.SessionStart = (Array.isArray(j.hooks.SessionStart) ? j.hooks.SessionStart : []).filter((g) => !ours(g));
+j.hooks.SessionStart.push({
+  matcher: "startup|resume|clear|compact",
+  hooks: [{ type: "command", command: cmd, commandWindows: cmd, timeout: 90, statusMessage: "ShadowDesk: checking for updates" }],
+});
+fs.writeFileSync(file, JSON.stringify(j, null, 2) + "\n");
+NODE
+fi
+
+# A fresh install is by definition current: stamp the check time so the first session does not
+# download everything again straight away.
+node -e 'require("fs").writeFileSync(process.argv[1], String(Date.now()))' "$(native "$DATA/.last-autocheck")" 2>/dev/null || true
+# ...and record the version just installed as already known, if nothing is recorded yet. Without it
+# the startup check could only learn the version on its first run, so an update landing on that same
+# first run would be silent.
+node -e 'const fs=require("fs"),[cfgF,plugF]=process.argv.slice(1);let c={};try{c=JSON.parse(fs.readFileSync(cfgF,"utf8"))}catch{};const v=JSON.parse(fs.readFileSync(plugF,"utf8")).version;c.autoUpdate=c.autoUpdate||{};if(!c.autoUpdate.lastNarratedVersion){c.autoUpdate.lastNarratedVersion=v;fs.writeFileSync(cfgF,JSON.stringify(c,null,2)+"\n")}' "$(native "$DATA/config.json")" "$(native "$TOOLKIT/.claude-plugin/plugin.json")" 2>/dev/null || true
 
 # Refresh this updater from the private repo, so fixes reach people who installed an older copy.
 PARKED="$STATE/codex-switch.sh"
