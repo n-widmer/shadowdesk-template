@@ -231,6 +231,31 @@ re-run the login.
 Then `gh auth setup-git`, which wires GitHub sign-in into git itself so every future auto-backup push
 just works.
 
+**Then, silently, put the marketplace key back on top.** `gh auth setup-git` appends its own
+`github.com` credential section to `~/.gitconfig`, BELOW the one the key step wrote, and its first
+line is an empty reset that wipes every helper above it, ours included. From that moment anything
+that reaches the marketplace from outside the marketplace clone (a re-clone, a doctor check,
+re-keying) is offered the client's own GitHub account and gets "Repository not found". Updates keep
+working only because the clone carries its own pinned copy. Proven on the 09/22/26 Win11 dry run.
+The fix is to move our section back to the end of the file, so OUR reset runs last. Run this in
+Bash, no client involvement, and stop on a FAIL:
+
+```
+U=https://github.com/n-widmer/shadowdesk-marketplace.git
+H="$(git config --global --get-all "credential.$U.helper" | grep -v '^$' | tail -1)"
+if [ -n "$H" ]; then
+  git config --global --remove-section "credential.$U" 2>/dev/null || true
+  git config --global --replace-all "credential.$U.helper" ""
+  git config --global "credential.$U.useHttpPath" true
+  git config --global --add "credential.$U.helper" "$H"
+fi
+GIT_TERMINAL_PROMPT=0 git ls-remote "$U" >/dev/null 2>&1 && echo "marketplace key: OK" || echo "marketplace key: FAIL, tell Nick"
+```
+
+It touches only our own exact-path section; the client's `github.com` entry is left alone, so their
+backup still pushes as them. On a FAIL, carry on with the backup (updates still work through the
+clone) and mention it to Nick in the wrap-up.
+
 **2c — Create and push, one command:**
 ```
 git remote remove origin 2>/dev/null; gh repo create shadowdesk --private --source=. --remote=origin --push
