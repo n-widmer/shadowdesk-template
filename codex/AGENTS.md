@@ -82,16 +82,15 @@ better. This system gets sharper by hearing where it lets me down.
 
 ## 9. Getting updates
 
-My toolkit came from my personal key on setup day. When Nick ships a new skill or sharpens an old
-one, I pull it with one line in the terminal:
+My toolkit came from my personal key on setup day, and it keeps itself current. Each time I start
+Codex, a small ShadowDesk startup check pulls anything new Nick has shipped and tells me in one line
+what landed. To pull right now I type `$update`; to confirm everything is working, `$doctor`.
 
-```
-bash ~/.shadowdesk/codex-switch.sh
-```
+If I switch a skill off (I just say "turn off the email skill"), it stays off through every update,
+and I can turn it back on the same way.
 
-No code needed, it is saved. Restart Codex afterwards so the new skills load. My key is read-only,
-single-repo, and Nick can revoke it. I will never be asked to paste a password or a token anywhere.
-If any step ever shows me a raw key and asks me to copy it, I stop and tell Nick.
+My key is read-only, single-repo, and Nick can revoke it. I will never be asked to paste a password or
+a token anywhere. If any step ever shows me a raw key and asks me to copy it, I stop and tell Nick.
 
 ## 10. Pointers
 

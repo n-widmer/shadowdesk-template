@@ -12,3 +12,7 @@ __pycache__/
 
 # The coach keeps anything with client names or figures (undo lists, client reports, briefings) here: it stays on this laptop.
 private/
+
+# Codex's startup check is registered per machine with an absolute path. The installer puts it
+# back on any new computer; committing it would point a second laptop at a path that is not there.
+.codex/hooks.json

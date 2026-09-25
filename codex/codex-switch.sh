@@ -17,11 +17,25 @@
 #                                        it) instead of ~/.agents/skills, and keep updating there
 set -euo pipefail
 
-API="${SHADOWDESK_KEY_API:-https://www.shadowdesk.ai/api/key}"
-REPO_URL="${SHADOWDESK_MKT_URL:-https://github.com/n-widmer/shadowdesk-marketplace.git}"
-REF="${SHADOWDESK_MKT_REF:-}"   # test a staged branch before it reaches main
-
 die() { echo "STOP: $*" >&2; exit 1; }
+
+# The two overrides exist for the sealed tests only: a LOCAL copy of the marketplace, a key server
+# on THIS machine. A remote value is refused, or a stray environment variable would point the daily
+# update at somebody else's repo, or send the client's code to somebody else's server.
+API="https://www.shadowdesk.ai/api/key"
+case "${SHADOWDESK_KEY_API:-}" in
+  "") ;;
+  http://127.0.0.1[:/]*|http://localhost[:/]*) API="$SHADOWDESK_KEY_API" ;;
+  *) die "SHADOWDESK_KEY_API may only point at this computer. Unset it and try again." ;;
+esac
+REPO_URL="https://github.com/n-widmer/shadowdesk-marketplace.git"
+LOCAL_MKT=""
+case "${SHADOWDESK_MKT_URL:-}" in
+  "") ;;
+  /*|[A-Za-z]:/*|file://*) REPO_URL="$SHADOWDESK_MKT_URL"; LOCAL_MKT=1 ;;
+  *) die "SHADOWDESK_MKT_URL may only be a folder on this computer. Unset it and try again." ;;
+esac
+REF="${SHADOWDESK_MKT_REF:-}"   # test a staged branch before it reaches main
 
 # Windows: Git Bash's $HOME is usually %USERPROFILE%, but a set HOME env var wins. Codex reads the
 # real user profile, so prefer USERPROFILE when it is present.
@@ -72,19 +86,32 @@ if [ -z "$CODE" ] && [ -f "$KEYFILE" ]; then CODE="$(cat "$KEYFILE")"; fi
 
 command -v git >/dev/null 2>&1 || die "Git is not installed. Install Git first, then re-run."
 command -v curl >/dev/null 2>&1 || die "curl is not available. On Windows use Git Bash, not PowerShell."
+command -v node >/dev/null 2>&1 || echo "note: Node is not installed, so the toolkit cannot update itself or run \$update. Install it from nodejs.org, then run this line again." >&2
 
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT INT TERM HUP
+# A kill (the startup check gives up after 75s) must END the run, not let it carry on with the
+# download folder gone and half the skills copied. bash runs a TERM trap and then continues unless
+# the trap exits.
+trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP"; exit 1' INT TERM HUP
 
 # --- download the Codex edition -------------------------------------------------------------------
-export GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= SSH_ASKPASS=
-if [ -n "${SHADOWDESK_MKT_URL:-}" ]; then
+# Git gives up on its own when the connection stalls, so the caller's timeout is a backstop and not
+# the only thing that can end a hung clone (a killed bash leaves git holding the pipes).
+export GIT_TERMINAL_PROMPT=0 GIT_ASKPASS= SSH_ASKPASS= GIT_HTTP_LOW_SPEED_LIMIT=1000 GIT_HTTP_LOW_SPEED_TIME=20
+GITERR="$TMP/git.err"
+if [ -n "$LOCAL_MKT" ]; then
   # Test harness: a local copy of the private repo, no key exchange.
   git -c core.autocrlf=false -c core.eol=lf clone --quiet --depth 1 ${REF:+--branch=$REF} "$REPO_URL" "$TMP/mkt" \
     || die "could not read the test marketplace at $REPO_URL"
 else
   [ -n "$CODE" ] || die "no code. Run: bash codex-switch.sh <your-code>"
-  TOKEN="$(curl -fsSL "$API?k=$CODE")" || die "that code was not accepted. Ask Nick for a fresh one."
+  TOKEN="$(curl -fsSL --connect-timeout 10 --max-time 30 "$API?k=$CODE")" || {
+    case $? in
+      6|7|28|35) die "could not reach shadowdesk.ai. Check the internet connection, then try again." ;;
+      *) die "that code was not accepted. Ask Nick for a fresh one." ;;
+    esac
+  }
   case "$TOKEN" in
     github_pat_*|ghp_*) ;;
     *) die "shadowdesk.ai did not return a usable key. Tell Nick." ;;
@@ -94,8 +121,14 @@ else
   GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraHeader" \
   GIT_CONFIG_VALUE_0="Authorization: Basic $AUTH" \
     git -c credential.helper= -c core.autocrlf=false -c core.eol=lf \
-      clone --quiet --depth 1 ${REF:+--branch=$REF} "$REPO_URL" "$TMP/mkt" \
-    || { unset AUTH; die "could not download the toolkit. Check the internet connection, then tell Nick."; }
+      clone --quiet --depth 1 ${REF:+--branch=$REF} "$REPO_URL" "$TMP/mkt" 2>"$GITERR" \
+    || {
+      unset AUTH
+      if grep -qiE 'Authentication failed|HTTP 401|HTTP 403|not found' "$GITERR" 2>/dev/null; then
+        die "that code was not accepted by the toolkit library. It may have expired; ask Nick for a fresh one."
+      fi
+      die "could not download the toolkit. Check the internet connection, then tell Nick."
+    }
   unset AUTH
 fi
 
@@ -103,9 +136,7 @@ EDITION="$TMP/mkt/codex"
 [ -d "$EDITION/skills" ] || die "the toolkit download has no Codex edition yet. Tell Nick."
 
 # --- install --------------------------------------------------------------------------------------
-rm -rf "$TOOLKIT"
-mkdir -p "$TOOLKIT" "$SKILLS" "$DATA"
-cp -R "$EDITION/toolkit/." "$TOOLKIT/"
+mkdir -p "$SKILLS" "$DATA"
 
 R_TOOLKIT="$(sed_escape "$(native "$TOOLKIT")")"
 R_SKILLS="$(sed_escape "$(native "$SKILLS")")"
@@ -115,7 +146,17 @@ fill() {
     -e "s|@@TOOLKIT@@|$R_TOOLKIT|g" -e "s|@@SKILLS@@|$R_SKILLS|g" -e "s|@@DATA@@|$R_DATA|g" {} +
   find "$1" -type f -name '*.bak' -delete
 }
-fill "$TOOLKIT"
+
+# The toolkit holds the very script Codex runs at every start (and $update, $doctor). Build the new
+# copy beside the old one and swap by rename, so a kill mid-copy can never leave an empty toolkit
+# with no way to repair itself.
+rm -rf "$TOOLKIT.new" "$TOOLKIT.old"
+mkdir -p "$TOOLKIT.new"
+cp -R "$EDITION/toolkit/." "$TOOLKIT.new/"
+fill "$TOOLKIT.new"
+[ -d "$TOOLKIT" ] && mv "$TOOLKIT" "$TOOLKIT.old"
+mv "$TOOLKIT.new" "$TOOLKIT"
+rm -rf "$TOOLKIT.old"
 
 # Skills this client switched off (`disabledSkills` in their config) are not copied, and a copy we
 # installed before is removed. Without this every update brought a switched-off skill back.
@@ -123,6 +164,10 @@ DISABLED=""
 if command -v node >/dev/null 2>&1 && [ -f "$DATA/config.json" ]; then
   DISABLED="$(node -e 'try{const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));(c.disabledSkills||[]).filter(n=>typeof n==="string"&&/^[A-Za-z0-9._-]+$/.test(n)&&!n.startsWith(".")).forEach(n=>console.log(n))}catch{}' "$(native "$DATA/config.json")" 2>/dev/null | tr -d '\r' | tr '\n' ' ' || true)"
 fi
+
+# A copy is ours to delete only if we marked it, or it is an unmarked copy from the first version of
+# this script (those all say ShadowDesk). Never touch a client's own same-named skill.
+is_ours() { [ -f "$1/$MARK" ] || grep -qis 'shadowdesk' "$1/SKILL.md"; }
 
 installed=0; ours=""
 for dir in "$EDITION/skills"/*/ "$TMP/mkt/codex-extras/skills"/*/; do
@@ -132,16 +177,19 @@ for dir in "$EDITION/skills"/*/ "$TMP/mkt/codex-extras/skills"/*/; do
     if [ -d "$SKILLS/$name" ] && [ -f "$SKILLS/$name/$MARK" ]; then rm -rf "${SKILLS:?}/$name"; fi
     continue ;;
   esac
+  if [ -d "$SKILLS/$name" ] && ! is_ours "$SKILLS/$name"; then
+    echo "kept: $name is a skill of your own, so Nick's $name was not installed over it" >&2
+    continue
+  fi
+  # Same swap as the toolkit: a kill between copy and fill must not leave a half-made skill live.
+  rm -rf "${SKILLS:?}/.$name.new"
+  cp -R "$dir" "$SKILLS/.$name.new"
+  fill "$SKILLS/.$name.new"
+  : > "$SKILLS/.$name.new/$MARK"
   rm -rf "${SKILLS:?}/$name"
-  cp -R "$dir" "$SKILLS/$name"
-  fill "$SKILLS/$name"
-  : > "$SKILLS/$name/$MARK"
+  mv "$SKILLS/.$name.new" "$SKILLS/$name"
   installed=$((installed + 1)); ours="$ours $name"
 done
-
-# A copy is ours to delete only if we marked it, or it is an unmarked copy from the first version of
-# this script (those all say ShadowDesk). Never touch a client's own same-named skill.
-is_ours() { [ -f "$1/$MARK" ] || grep -qs 'ShadowDesk' "$1/SKILL.md"; }
 
 # Skills the previous run installed that the toolkit no longer ships, plus Claude-only leftovers.
 # No manifest yet means the first version installed here: the Claude-only leftovers still have to go.
@@ -163,7 +211,9 @@ for old in "$PREVIOUS_SKILLS" "$GLOBAL_SKILLS"; do
 done
 
 printf '%s\n' $ours > "$MANIFEST"
-printf '%s' "$SKILLS" > "$TARGETFILE"
+# Node reads this file too (the startup check, $doctor, the skill switch), and Node on Windows
+# cannot open a Git Bash path like /c/Users/...; C:/Users/... works everywhere.
+printf '%s' "$(native "$SKILLS")" > "$TARGETFILE"
 if [ -n "$CODE" ]; then
   printf '%s' "$CODE" > "$KEYFILE"
   chmod 600 "$KEYFILE" 2>/dev/null || true
@@ -204,12 +254,15 @@ fi
 # switched-off skills stay off, the same as the Claude edition. The command never changes between
 # releases, only the script it runs does, so Codex's one-time approval of the hook keeps holding.
 # Any hook of the client's own in that file is kept; only our entry is replaced.
-if command -v node >/dev/null 2>&1; then
+if ! [ -f "$TOOLKIT/scripts/codex-session-start.mjs" ]; then
+  echo "note: this edition has no startup check yet, so nothing was registered with Codex" >&2
+elif command -v node >/dev/null 2>&1; then
   if [ "$SKILLS" != "$GLOBAL_SKILLS" ]; then HOOKS_FILE="$(dirname "$(dirname "$SKILLS")")/.codex/hooks.json"; else HOOKS_FILE="$BASE/.codex/hooks.json"; fi
   mkdir -p "$(dirname "$HOOKS_FILE")"
-  node - "$(native "$HOOKS_FILE")" "$(native "$TOOLKIT/scripts/codex-session-start.mjs")" <<'NODE' || echo "note: could not register the startup check; run \$update later to add it" >&2
+  node - "$(native "$HOOKS_FILE")" "$(native "$TOOLKIT/scripts/codex-session-start.mjs")" <<'NODE' || echo "WARN: hook not registered; run \$update later to add it" >&2
 const fs = require("fs"), [file, script] = process.argv.slice(2);
-let j = {}; try { j = JSON.parse(fs.readFileSync(file, "utf8")); } catch {}
+let before = ""; try { before = fs.readFileSync(file, "utf8"); } catch {}
+let j = {}; try { j = JSON.parse(before); } catch {}
 if (!j || typeof j !== "object" || Array.isArray(j)) j = {};
 j.hooks = j.hooks && typeof j.hooks === "object" ? j.hooks : {};
 const ours = (g) => JSON.stringify(g || {}).includes("codex-session-start.mjs");
@@ -219,7 +272,9 @@ j.hooks.SessionStart.push({
   matcher: "startup|resume|clear|compact",
   hooks: [{ type: "command", command: cmd, commandWindows: cmd, timeout: 90, statusMessage: "ShadowDesk: checking for updates" }],
 });
-fs.writeFileSync(file, JSON.stringify(j, null, 2) + "\n");
+const after = JSON.stringify(j, null, 2) + "\n";
+// Unchanged means untouched: Codex's one-time trust of the hook is keyed on this file.
+if (after !== before) fs.writeFileSync(file, after);
 NODE
 fi
 

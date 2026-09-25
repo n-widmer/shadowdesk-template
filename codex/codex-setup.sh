@@ -47,6 +47,9 @@ if [ -d .claude/skills ]; then
     [ "$name" = "day-one" ] && continue
     if [ ! -d ".agents/skills/$name" ]; then
       cp -R "$dir" ".agents/skills/$name"
+      # The template's own two skills are Nick's: mark them so the installer knows it may replace
+      # them with their Codex versions. Anything else here is the client's and is never marked.
+      case "$name" in begin-session|capture-voice) : > ".agents/skills/$name/.shadowdesk-managed" ;; esac
       echo "kept:    $name -> .agents/skills/"
     fi
   done
@@ -77,8 +80,8 @@ for f in SKILLS.md CONNECTIONS.md README.md $(find references learn -type f -nam
   [ -f "$f" ] || continue
   before="$(cat "$f")"
   perl -pi -e '
-    s#`?/shadowdesk:update`?#`bash ~/.shadowdesk/codex-switch.sh`#g;
-    s#`?/shadowdesk:adapt( [a-z<>-]+)?`?#Nick\x27s adapt step (not in Codex yet)#g;
+    s#`?/shadowdesk:update`?#`\$update`#g;
+    s#`?/shadowdesk:adapt( [a-z<>-]+)?`?#`\$adapt$1`#g;
     s#`/shadowdesk:`#`\$`#g;
     s#/shadowdesk:([a-z0-9-]+)#\$$1#g;
     s#\.claude/skills/#.agents/skills/#g;
@@ -92,4 +95,4 @@ done
 echo "updated: $translated doc(s) now say Codex instead of Claude"
 
 echo
-echo "Done. Next: bash ~/codex-switch.sh --here <code>, then fill in section 1 of AGENTS.md."
+echo "Done. Next: bash codex/codex-switch.sh --here <code>, then fill in section 1 of AGENTS.md."
