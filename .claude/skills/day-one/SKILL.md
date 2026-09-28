@@ -189,11 +189,17 @@ is still pristine. Run it here or not at all.
 
 ## First, turn on the backup (before Step 1)
 
-**Already backed up? Skip this whole step.** Run `git remote get-url origin` and `git ls-remote origin`.
-If origin is the client's own GitHub repo (not `n-widmer/...`) and `git ls-remote origin` succeeds,
-this folder is already theirs and already backed up: Day One is being run again, or the folder was
-restored onto a new computer. Say "Your backup is already on." and go straight to Step 1. Never run
-`rm -rf .git` in that folder: it erases their history, and the new copy collides with their backup.
+**Already the client's own folder? Skip numbered steps 1 to 4 below.** Run `git remote get-url origin`.
+If it prints a GitHub repo that is not `n-widmer/...`, this folder is already theirs: Day One is being
+run again, or the folder was restored onto a new computer. Never run steps 1 to 4 in it: `rm -rf .git`
+erases their history, and a new repo collides with their backup. Instead:
+
+- `git ls-remote --exit-code origin HEAD`. If it succeeds, say "Your backup is already on." and go to
+  Day One, Step 1 of 3.
+- If it fails, sign them in the way step 2b describes (`gh auth status`, the pairing code, then
+  `gh auth setup-git`) and run it again. Still failing: `git push -u origin HEAD`, then run it again.
+- Still failing after that: tell them plainly "Your work is safe on this computer, but the cloud
+  backup needs Nick," and carry on with Day One. Never force push.
 
 The kickoff cloned a starter copy from my template. Before anything else, turn it into the client's OWN private, backed-up GitHub repo, and **prove it's real before you move on.** This step has silently half-failed on past setups (origin left pointing at my template, or a publish that made no commit), and nobody caught it until a later push failed. The discipline that kills that: **commit first, then publish, then verify against GitHub for real, then repair it yourself if the verify fails.** Never trust the button; trust the check.
 

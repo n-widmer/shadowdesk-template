@@ -53,7 +53,8 @@ fi
 # .codex/hooks.json is registered per machine with an absolute path. Neither belongs in the backup.
 touch .gitignore
 for pat in private/ .codex/hooks.json; do
-  grep -qxF "$pat" .gitignore || { printf '\n%s\n' "$pat" >> .gitignore; echo "updated: .gitignore now leaves out $pat"; }
+  # grep -c, not -q: -q can exit before tr finishes, and pipefail would read that as "not found".
+  tr -d '\r' < .gitignore | grep -cxF "$pat" >/dev/null || { printf '\n%s\n' "$pat" >> .gitignore; echo "updated: .gitignore now leaves out $pat"; }
 done
 
 # Skills the client built while on Claude keep working in Codex: same file format.
