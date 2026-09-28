@@ -11,6 +11,8 @@
 #                         Codex-ready from codex-switch.sh.
 #   .claude/           -> moved to ~/.shadowdesk/claude-backup-<time>/, never deleted
 #   SKILLS.md, CONNECTIONS.md, references/, learn/ -> Claude wording changed to Codex wording
+#   an older AGENTS.md / .gitignore (a first-version Codex folder) -> the memory/ line and the two
+#                         per-machine ignore lines are added once; nothing else in them changes
 #
 # Run it from inside the shadowdesk folder, once, before codex-switch.sh --here:
 #   bash codex/codex-setup.sh
@@ -36,6 +38,23 @@ else
     || die "could not get AGENTS.md. Check the internet connection."
   echo "created: AGENTS.md (downloaded)"
 fi
+
+# A folder set up before 09/18 kept its first AGENTS.md, which never tells Codex where memory lives.
+# Add that one line at the end of section 2 and change nothing else. (The coach offers the standing
+# sections itself, with the client's yes.)
+MEMLINE='My memory lives in `memory/` in this folder: read `memory/MEMORY.md` when you start, and add to it when you learn something that should last.'
+if ! grep -q 'memory/MEMORY.md' AGENTS.md; then
+  awk -v line="$MEMLINE" '/^## 3\./ && !done { print line; print ""; done = 1 } { print } END { if (!done) { print ""; print line } }' \
+    AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md
+  echo "updated: AGENTS.md now tells Codex to read memory/"
+fi
+
+# Same for an older .gitignore: private/ holds the coach's client names and figures, and
+# .codex/hooks.json is registered per machine with an absolute path. Neither belongs in the backup.
+touch .gitignore
+for pat in private/ .codex/hooks.json; do
+  grep -qxF "$pat" .gitignore || { printf '\n%s\n' "$pat" >> .gitignore; echo "updated: .gitignore now leaves out $pat"; }
+done
 
 # Skills the client built while on Claude keep working in Codex: same file format.
 mkdir -p .agents/skills memory

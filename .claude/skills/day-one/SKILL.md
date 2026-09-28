@@ -189,6 +189,12 @@ is still pristine. Run it here or not at all.
 
 ## First, turn on the backup (before Step 1)
 
+**Already backed up? Skip this whole step.** Run `git remote get-url origin` and `git ls-remote origin`.
+If origin is the client's own GitHub repo (not `n-widmer/...`) and `git ls-remote origin` succeeds,
+this folder is already theirs and already backed up: Day One is being run again, or the folder was
+restored onto a new computer. Say "Your backup is already on." and go straight to Step 1. Never run
+`rm -rf .git` in that folder: it erases their history, and the new copy collides with their backup.
+
 The kickoff cloned a starter copy from my template. Before anything else, turn it into the client's OWN private, backed-up GitHub repo, and **prove it's real before you move on.** This step has silently half-failed on past setups (origin left pointing at my template, or a publish that made no commit), and nobody caught it until a later push failed. The discipline that kills that: **commit first, then publish, then verify against GitHub for real, then repair it yourself if the verify fails.** Never trust the button; trust the check.
 
 **1. Detach + make the first save (you drive this in Bash, this alone fixes half the old bug).**
