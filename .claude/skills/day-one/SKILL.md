@@ -1,11 +1,11 @@
 ---
 name: day-one
-description: First-touch on-ramp inside this ShadowDesk OS. Three steps, voice tool, harness settings (bypass mode + model picker), and a fast website and LinkedIn scrape, followed by a synthesized identity paragraph and a soft-ask handoff to /shadowdesk:skill-builder. Use when the user pastes the kickoff bundle from shadowdesk.ai/levelup, says "set me up", "first time", "I just opened this", "walk me through Day One", or when you spot the SHADOWDESK_BUNDLE marker in their first message. One-shot per client.
+description: First-touch on-ramp inside this ShadowDesk OS. Four steps, voice tool, harness settings (bypass mode + model picker), a fast website and LinkedIn scrape, and bringing over old ChatGPT and Claude chats, followed by a synthesized identity paragraph and a soft-ask handoff to /shadowdesk:skill-builder. Use when the user pastes the kickoff bundle from shadowdesk.ai/levelup, says "set me up", "first time", "I just opened this", "walk me through Day One", or when you spot the SHADOWDESK_BUNDLE marker in their first message. One-shot per client.
 ---
 
 # /day-one
 
-The first-touch on-ramp inside this ShadowDesk OS. Three steps, identity paragraph, soft handoff. I am the on-ramp, not the work.
+The first-touch on-ramp inside this ShadowDesk OS. Four steps, identity paragraph, soft handoff. I am the on-ramp, not the work.
 
 > Guided session: this skill assumes Nick (or a future facilitator) is screen-sharing with the client on Zoom or in-person. See § Notes for whoever is guiding this session at the bottom.
 
@@ -130,7 +130,7 @@ After the silent OS detect, the silent toolkit check, and the bundle parse, open
 >
 > Day One is short. It's the on-ramp.
 >
-> First I'll turn on your backup so your work is safe. Then three quick things: get your voice tool working, two settings that make me easy to drive, and a fast look at your business so I know who I'm working with.
+> First I'll turn on your backup so your work is safe. Then four quick things: get your voice tool working, two settings that make me easy to drive, a fast look at your business, and bringing over what you already told ChatGPT or Claude, so I know who I'm working with.
 >
 > Once that's done, your ShadowDesk OS is ready to start building real tools for you.
 >
@@ -141,7 +141,7 @@ After the silent OS detect, the silent toolkit check, and the bundle parse, open
 Between steps, use a plain progress indicator, no bars:
 
 ```
-Day One, Step <N> of 3
+Day One, Step <N> of 4
 ```
 
 "Type **next**" gates between steps. Reserve `AskUserQuestion` for real either/or choices inside the steps.
@@ -195,7 +195,7 @@ run again, or the folder was restored onto a new computer. Never run steps 1 to 
 erases their history, and a new repo collides with their backup. Instead:
 
 - `git ls-remote --exit-code origin HEAD`. If it succeeds, say "Your backup is already on." and go to
-  Day One, Step 1 of 3.
+  Day One, Step 1 of 4.
 - If it fails, sign them in the way step 2b describes (`gh auth status`, the pairing code, then
   `gh auth setup-git`) and run it again. Still failing: `git push -u origin HEAD`, then run it again.
 - Still failing after that: tell them plainly "Your work is safe on this computer, but the cloud
@@ -444,7 +444,23 @@ If the client has no website AND no LinkedIn:
 
 > No problem, we'll get it straight from you. Tell me in your own words: what do you do, who do you serve, and how long have you been doing it?
 
-Capture the answer. Write it to `onboarding/profile-from-client-statement.md`. Proceed to identity synthesis with that as the only source.
+Capture the answer. Write it to `onboarding/profile-from-client-statement.md`. Proceed to Step 4.
+
+## Step 4, Bring over your old ChatGPT and Claude chats
+
+> Step 4.
+>
+> If you've been using ChatGPT or Claude, you've already told them a lot about your business. Let's bring that over so you don't have to say it twice.
+>
+> Did you download your chat exports before today? They come as zip files in your Downloads.
+
+`AskUserQuestion`:
+
+1. **"Yes, they're in Downloads" (Recommended)**: follow [`references/import-chat-history.md`](../../../references/import-chat-history.md) from the top. Keep it inside Day One's pace: the privacy pass and the show-then-write step are not optional, the deep read is capped as that file says.
+2. **"I asked, the email hasn't come yet"**: skip. Tell them: *"No problem. When the email comes, download the zip and paste this line in: `Read references/import-chat-history.md and bring over my old chats.`"*
+3. **"I never used them" / "Skip it"**: skip, no follow-up.
+
+Whatever lands in `onboarding/profile-from-chat-history.md` is the third source for the identity paragraph below.
 
 ## Identity paragraph synthesis (fills CLAUDE.md § 1)
 
@@ -452,7 +468,7 @@ Four-step flow.
 
 ### A, Bullet reflect
 
-Reflect what the scrape captured back as 4-5 short bullets. Plain language, no jargon:
+Reflect what the scrape (and the chat history, if Step 4 brought any over) captured back as 4-5 short bullets. Plain language, no jargon:
 
 > Here's what I picked up:
 >
@@ -511,7 +527,7 @@ A couple of skills (like end-session) tune themselves from a plain settings file
 
 Then `AskUserQuestion`:
 
-1. **"Build your first skill now" (Recommended)**, invoke `/shadowdesk:skill-builder` via the Skill tool in the same session. Continuity preserved.
+1. **"Build your first skill now" (Recommended)**, invoke `/shadowdesk:skill-builder` via the Skill tool in the same session. Continuity preserved. If `onboarding/skill-ideas-from-history.md` exists, start from its top idea.
 2. **"Take a break, I'll be here when you come back."**, show the paste-line explicitly and stop:
 
    > Nice work today. Your ShadowDesk OS is ready.
@@ -549,6 +565,7 @@ You (Nick at first, possibly future facilitators) are on Zoom or in-person, scre
 - [ ] **Windows only, confirm the shell is Git Bash, not PowerShell.** After the Git install + VS Code reopen, run `uname`. `MINGW...`/`MSYS...` = good (the AI is on Git Bash, the command line the whole ShadowDesk OS is written in). An error or anything else = it's on PowerShell, and onboarding breaks on step one. `/day-one` auto-checks and self-repairs this at its very start, so this is just a belt-and-suspenders glance. Why it matters, in plain English: [`references/whats-getting-installed.md`](../../../references/whats-getting-installed.md).
 - [ ] **GitHub CLI (`gh`) installed**, the tool that creates their private backup repo in one command. Windows: `winget install --id GitHub.cli`. Mac: the `.pkg` from [cli.github.com](https://cli.github.com), double-click. Verify with `gh --version`.
 - [ ] **Node.js installed**, a small engine a few skills run on. Windows: `winget install --id OpenJS.NodeJS.LTS -e --source winget`. Mac: download the **LTS** installer from [nodejs.org](https://nodejs.org) and double-click it (no Homebrew needed, see the explainer). Close and reopen VS Code after; verify with `node --version`.
+- [ ] **Chat exports requested at least a day before** (Section A step 4 of `day-one-install.md`), so the zips are in Downloads for Step 4. Not there? Step 4 skips cleanly; don't hold the call for it.
 - [ ] GitHub account exists (free), or create one during the publish step; the sign-in screen has a "Create an account" link. Both paths now use the same `gh` browser sign-in + `gh repo create` flow (backup step 2). The VS Code "Publish to GitHub" button is a fallback only, for a machine where `gh` can't be installed. Either way the backup step **commits first, verifies against GitHub for real (`git ls-remote origin`), and self-repairs from the terminal** if the publish flakes, so a half-failed publish gets caught and fixed in the session instead of surfacing later as a dead backup.
 - [ ] `shadowdesk.ai/levelup` → enter passcode → run **Step 1** (clones the starter ShadowDesk OS into Downloads; on path B, Claude runs the clone line itself from chat) → open the `shadowdesk` folder (path A: **File → Open Folder**; path B: the Claude app's folder picker) → paste the **Step 2** kickoff bundle into Claude Code chat. `/day-one` starts, and its FIRST action turns the cloned folder into the client's own private GitHub repo (detaches the template, then guides "Publish to GitHub private repository").
 - [ ] **Nothing ships in the clone. The toolkit installs from the paid marketplace, using the client's key, during Day One.** No key means no toolkit and Day One stops, by design. **The key folds into Day One:** their personal `shadowdesk.ai/levelup?k=<code>` link injects a `KEY_CODE` into the kickoff bundle, and `/day-one` runs the self-verifying `/shadowdesk:key` switch BEFORE the backup step (while the clone's git is still pristine — the switch depends on that). A client with no `KEY_CODE` in the bundle just stays on the free starter, and you can key them up later. Either way the kickoff page is two steps (clone → Day One), not three; the scary 5-command paste is gone.
