@@ -49,14 +49,14 @@ Nothing to install. Go to **https://github.com** and create a free account. This
 
 ### 4. Ask ChatGPT and Claude for a copy of your old chats (skip if you never used them)
 
-Do this at least a day before our call, because the email can take a while. On the call, your AI reads these so you don't have to re-explain your business. They stay on your laptop.
+On the call, your AI reads these so you don't have to re-explain your business. They stay on your laptop.
 
-- **ChatGPT:** click your profile picture, then **Settings**, **Data controls**, **Export data**, **Export**.
-- **Claude:** click your profile, then **Settings**, **Privacy**, **Export data**.
+- **ChatGPT, a day or two before the call:** click your profile picture, then **Settings**, **Data controls**, **Export data**, **Export**. When the email comes, click its download button right away (the link expires) and let the zip land in your **Downloads**.
+- **Claude, the morning of the call (its links only last a day):** click your profile, then **Settings**, **Privacy**, **Export data**. When the email comes, click its download button. You get one small file in **Downloads**. That's all you do. On the call, your AI turns it into the actual downloads.
 
-Each one emails you a download link. Click it and let the zip file land in your **Downloads**. Don't open it, just leave it there.
+Don't open any of these files, just leave them in Downloads.
 
-**You should see:** one zip in Downloads for each app you used.
+**You should see:** a zip from ChatGPT and a small `manifest` file from Claude in your Downloads.
 
 That is Section A. VS Code, Claude, a paid Claude plan, a free GitHub account, and your chat exports. If you get stuck on any of it, do not sweat it, we finish it live together.
 
@@ -97,7 +97,7 @@ Prefer Claude's own desktop app over VS Code? Great, this path is shorter, and t
 1. **Set up a paid Claude plan** at **https://claude.ai** if you have not already. Pro works fine, Max if you want the top model.
 2. **Install the Claude desktop app** from **https://claude.ai/download**. Open it and sign in with that paid account. **You should see:** the Claude app open and signed in, ready to chat.
 3. **Create a free GitHub account** at **https://github.com**. This is where your work gets backed up during our call. Keep the login handy.
-4. **Ask ChatGPT and Claude for a copy of your old chats**, at least a day before the call (skip if you never used them). Same clicks as step 4 of Section A above. Leave the zips in your Downloads.
+4. **Ask ChatGPT and Claude for a copy of your old chats** (skip if you never used them). Same clicks and timing as step 4 of Section A above: ChatGPT a day or two before, Claude the morning of the call.
 
 That is the whole pre-call list. No VS Code, no extension.
 
