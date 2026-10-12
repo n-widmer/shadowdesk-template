@@ -36,7 +36,7 @@ done
 unzip -oq <chatgpt zip> -d private/chat-history/chatgpt
 ```
 
-`private/` is already in `.gitignore`, so the raw chats never reach the GitHub backup. Check with `git check-ignore private/chat-history` before going on. Never upload, paste or send these files anywhere. A big export can come split as `-001`, `-002` and so on. Unzip every part.
+`private/` is already in `.gitignore`, so the raw chats never reach the GitHub backup. Check with `git check-ignore private/chat-history` before going on. Also run `pwd`: if the path contains `Mobile Documents`, `CloudStorage`, `Dropbox` or `OneDrive`, or the folder sits on a Mac Desktop that iCloud syncs, a cloud service will copy `private/` too. Tell the client in one line and let them decide. Never upload, paste or send these files anywhere. A big export can come split as `-001`, `-002` and so on. Unzip every part.
 
 **Skip these two Claude zips. Don't unzip them:**
 - `light_metadata`: the account email plus a login history with IP addresses. There's nothing in it about the business.
@@ -57,13 +57,19 @@ Tell the client in one line: how many chats, from which app, oldest and newest d
 
 ## 4. Privacy pass (before reading anything closely)
 
-Show the chat names, project names and memory-file names grouped into a few plain topics (business, a client's name, health, family, and so on). Then `AskUserQuestion`:
+**First, one question:** "Did anyone else ever type into this ChatGPT or Claude account (a partner, an assistant, a teammate)?" If yes, get their names. Their chats can still give business facts, but never voice or repeat asks. Those must come from the client alone.
 
-1. **"Use the work chats, skip the personal ones" (Recommended)**: skip anything personal, plus any chat naming a client the client hasn't said is fine.
+Show the chat names, project names and memory-file names grouped into a few plain topics (business, clients, health, family, dating, money, and so on). Then `AskUserQuestion`:
+
+1. **"Use the work chats, skip the personal ones" (Recommended)**: skip personal topics. Chats that simply mention a client are fine. That's the business.
 2. **"Let me pick"**: they name the topics or titles to skip.
 3. **"Use everything"**
 
-If their work involves client records covered by privacy rules (tax, health, legal, financial), say it plainly: chats holding a client's private details stay skipped unless that client has agreed. Write the skip list to `private/chat-history/skipped.md`.
+If their work involves client records covered by privacy rules (tax, health, legal, financial), say it plainly: chats holding a client's private records (account numbers, health details, case files) stay skipped unless that client has agreed. Write the skip list to `private/chat-history/skipped.md`.
+
+**Filter line by line, not just chat by chat.** Work-named files carry personal lines: a memory file called `profile` can mention where they live, their health, their dating life, or a friend's legal trouble. Nothing personal, nothing about a friend or family member, and no AI-written personality read ("blind spots", "motivation rooted in...") goes into any output file, whatever file it was found in.
+
+**Secrets never get copied.** Before writing anything, scan what you're about to write for passwords, API keys, tokens, card or bank numbers, and lines like `password:` or `key=`. Drop them. If the raw chats contain any, tell the client which chats (by name, never the value) so they can change that password.
 
 ## 5. Read in this order
 
@@ -80,23 +86,24 @@ Pull out only:
 - **Repeat asks:** the same kind of request three or more times (e.g. "rewrite this email", "summarize this call"). These become skill ideas.
 - **Recurring tasks:** anything time-based ("every Monday...").
 
-Tag every fact with the chat, memory or project it came from, plus a date. When two sources disagree, keep the newer one and flag it. Mark anything older than 12 months **(check: may be out of date)**.
+Tag every fact with the chat, memory or project it came from, plus a date. Claude's memory has no dates. When it disagrees with something else (an old offer against a new one, two job titles), date the claim from the chats that mention it. If that still doesn't settle it, add it to the step 6 questions. Never pick one silently. Mark anything older than 12 months **(check: may be out of date)**. Skip blank messages, and chats with no summary and no text.
 
 ## 6. What the exports leave out: ask for a paste
 
-Claude's export includes its memory and project instructions, so ask Claude users for nothing. Ask the client for these (and say "skip" is fine):
+Claude's export includes its memory and project instructions, so there's nothing to paste from Claude. Do ask the conflicts from step 5 (which offer is current, which title), at most three, in one `AskUserQuestion`. Ask the client for these (and say "skip" is fine):
 
 - **ChatGPT:** saved memories (Settings → Personalization → Memory → Manage, copy all) and custom instructions (same screen). These are not checked against a 2026 export, so if the zip already holds them, skip the paste.
 - **Either app:** any scheduled tasks (a list in their own words is fine). The Claude export doesn't include scheduled tasks.
 
 ## 7. Show, then write
 
-Show the client a short preview of each file below, then `AskUserQuestion`: **"Save these" (Recommended)** / **"Change something first"** / **"Skip this one"**. Write only what they approve. Every file gets a `created:` line (CLAUDE.md § 7).
+Show the client the profile in full and a one-line list of the rest (the project names, the number of skill ideas and tasks). Then ask once with `AskUserQuestion`: **"Save all of it" (Recommended)** / **"Change something first"** / **"Let me pick which"**. Write only what they approve. Every file gets a `created:` line (CLAUDE.md § 7).
 
 | File | What goes in it |
 |---|---|
 | `onboarding/profile-from-chat-history.md` | Business facts, voice notes, pasted memories and instructions, each with its source and date |
-| `projects/<project-name>/README.md` | One per old project worth keeping: what it's for, its instructions (verbatim), its memory, decisions made. List its docs by filename. Copy a doc in only if the client says so. |
+| `projects/<project-name>/README.md` | One per old project worth keeping: what it's for, its memory, decisions made, and a list of its docs by filename. Copy a doc in only if the client says so. Skip projects whose docs are all empty. |
+| `projects/<project-name>/instructions.md` | The project's instructions word for word, minus anything that isn't instructions (pasted scripts, AI replies pasted in) |
 | `onboarding/skill-ideas-from-history.md` | The repeat asks, most frequent first, each with one example of how they asked |
 | `onboarding/recurring-tasks-from-history.md` | Old scheduled and recurring tasks, to rebuild later with `/shadowdesk:skill-builder` |
 
